@@ -1,0 +1,141 @@
+### Sprint 1: Préparation et Conception Initiale
+- [ ] Lire et analyser les spécifications du projet
+  - [ ] Lire l'intégralité du document de spécifications
+  - [ ] Noter les exigences principales et les fonctionnalités optionnelles
+  - [ ] Identifier les points de clarification nécessaires
+- [ ] Identifier les fonctionnalités essentielles et optionnelles
+  - [ ] Lister toutes les fonctionnalités mentionnées dans les spécifications
+  - [ ] Classer les fonctionnalités en essentielles et optionnelles
+- [ ] Étudier le protocole HTTP/1.1 et les mécanismes d'I/O multiplexing
+  - [ ] Lire la RFC 2616 pour HTTP/1.1
+  - [ ] Rechercher des ressources supplémentaires sur HTTP/1.1
+  - [ ] Étudier `epoll` et d'autres mécanismes d'I/O multiplexing
+- [ ] Examiner les API de système d'exploitation pour l'I/O multiplexing
+  - [ ] Lire la documentation de `libc` pour `epoll`
+  - [ ] Identifier d'autres API pertinentes pour l'I/O multiplexing
+- [ ] Comprendre les concepts de CGI
+  - [ ] Lire sur le Common Gateway Interface (CGI)
+  - [ ] Identifier les principales exigences pour l'intégration CGI
+- [ ] Créer une roadmap avec des jalons clés
+  - [ ] Définir les étapes majeures du projet
+  - [ ] Fixer des dates cibles pour chaque jalon
+- [ ] Définir l'architecture globale du serveur
+  - [ ] Créer un diagramme d'architecture
+  - [ ] Décrire les interactions principales entre les composants
+- [ ] Concevoir les modules principaux (gestion des connexions, traitement des requêtes, réponses HTTP, etc.)
+  - [ ] Lister les modules principaux
+  - [ ] Décrire brièvement les responsabilités de chaque module
+  - [ ] Identifier les interfaces entre les modules
+
+### Sprint 2: Initialisation du Projet et Module de Configuration
+- [ ] Configurer l'environnement de développement en Rust
+  - [ ] Installer Rust et Cargo
+  - [ ] Configurer un éditeur de code (VS Code, IntelliJ, etc.)
+- [ ] Initialiser le dépôt de code source (par exemple, Git)
+  - [ ] Créer un nouveau dépôt Git
+  - [ ] Ajouter un fichier `.gitignore`
+  - [ ] Faire un premier commit
+- [ ] Développer le module de lecture et de gestion des fichiers de configuration
+  - [ ] Définir le format du fichier de configuration
+  - [ ] Écrire le code pour lire le fichier de configuration
+  - [ ] Valider et traiter les valeurs de configuration
+- [ ] Implémenter la gestion des adresses IP et des ports
+  - [ ] Lire les adresses IP et les ports à partir du fichier de configuration
+  - [ ] Configurer le serveur pour écouter sur ces adresses et ports
+- [ ] Implémenter la gestion des chemins de fichiers et des limites de taille
+  - [ ] Lire les chemins de fichiers et les limites de taille à partir du fichier de configuration
+  - [ ] Valider et appliquer ces configurations
+
+### Sprint 3: Gestion des Connexions et Traitement des Requêtes HTTP
+- [ ] Implémenter le binding des sockets pour écouter sur les adresses IP et les ports configurés
+  - [ ] Créer des sockets pour chaque adresse IP et port
+  - [ ] Associer (bind) chaque socket à l'adresse IP et au port correspondant
+- [ ] Utiliser `epoll` pour gérer les connexions entrantes de manière non bloquante
+  - [ ] Configurer `epoll` pour surveiller les sockets
+  - [ ] Implémenter la boucle principale d'événements `epoll`
+- [ ] Parser les requêtes HTTP
+  - [ ] Lire les données brutes à partir des sockets
+  - [ ] Parser les en-têtes HTTP
+  - [ ] Traiter les corps de requêtes selon les méthodes HTTP
+- [ ] Implémenter la gestion des méthodes HTTP (GET, POST, DELETE)
+  - [ ] Implémenter la gestion des requêtes GET
+  - [ ] Implémenter la gestion des requêtes POST
+  - [ ] Implémenter la gestion des requêtes DELETE
+- [ ] Gérer les requêtes chunked et unchunked
+  - [ ] Détecter et gérer les requêtes chunked
+  - [ ] Traiter les requêtes non chunked de manière appropriée
+
+### Sprint 4: Gestion des Réponses HTTP et Module CGI
+- [ ] Générer les réponses HTTP avec les en-têtes et les corps de réponse appropriés
+  - [ ] Créer des en-têtes HTTP pour les réponses
+  - [ ] Générer les corps de réponse en fonction des requêtes
+- [ ] Gérer les statuts HTTP et les pages d'erreur personnalisées
+  - [ ] Implémenter la gestion des statuts HTTP
+  - [ ] Créer des pages d'erreur pour les statuts 400, 403, 404, 405, 413, 500
+- [ ] Implémenter la gestion des scripts CGI en fonction des extensions de fichiers
+  - [ ] Détecter les requêtes nécessitant l'exécution de scripts CGI
+  - [ ] Configurer et exécuter les scripts CGI
+- [ ] Utiliser `fork` pour exécuter les scripts CGI et gérer leurs sorties
+  - [ ] Utiliser `fork` pour exécuter les scripts CGI dans des processus enfants
+  - [ ] Capturer et traiter les sorties des scripts CGI
+
+### Sprint 5: Gestion des Fichiers et des Routes
+- [ ] Implémenter la gestion des routes et des chemins de fichiers
+  - [ ] Lire et traiter les routes configurées
+  - [ ] Mapper les URL aux chemins de fichiers correspondants
+- [ ] Gérer les redirections HTTP, les fichiers par défaut et les listes de répertoires
+  - [ ] Implémenter les redirections HTTP
+  - [ ] Définir et servir les fichiers par défaut pour les répertoires
+  - [ ] Implémenter la liste des répertoires si activée
+- [ ] Implémenter la gestion des cookies et des sessions
+  - [ ] Lire et écrire les cookies dans les réponses HTTP
+  - [ ] Implémenter la gestion des sessions côté serveur
+- [ ] Ajouter des mécanismes d'authentification et de validation des sessions
+  - [ ] Implémenter les mécanismes d'authentification utilisateur
+  - [ ] Valider les sessions utilisateur pour les requêtes protégées
+
+### Sprint 6: Tests Unitaires et d'Intégration
+- [ ] Écrire des tests unitaires pour chaque module du serveur
+  - [ ] Créer des tests pour le module de configuration
+  - [ ] Créer des tests pour le module de gestion des connexions
+  - [ ] Créer des tests pour le module de traitement des requêtes
+- [ ] Vérifier le bon fonctionnement des fonctionnalités individuelles
+  - [ ] Exécuter les tests unitaires et vérifier les résultats
+- [ ] Écrire des tests d'intégration pour vérifier l'interaction entre les modules
+  - [ ] Créer des tests pour vérifier l'intégration entre les modules
+- [ ] Tester les scénarios complets de requêtes et de réponses
+  - [ ] Créer des tests pour les scénarios complets de requêtes GET, POST, DELETE
+  - [ ] Vérifier les réponses et les statuts HTTP
+
+### Sprint 7: Tests de Performance et de Sécurité
+- [ ] Utiliser des outils de test de charge comme `siege` pour vérifier la performance et la disponibilité du serveur
+  - [ ] Configurer `siege` pour tester le serveur
+  - [ ] Exécuter les tests de charge et analyser les résultats
+- [ ] Identifier et optimiser les goulets d'étranglement
+  - [ ] Analyser les résultats des tests de charge pour identifier les goulets d'étranglement
+  - [ ] Optimiser le code pour améliorer la performance
+- [ ] Vérifier la sécurité du serveur contre les attaques courantes (injection, XSS, CSRF, DoS)
+  - [ ] Vérifier les entrées utilisateur pour prévenir les injections SQL et XSS
+  - [ ] Implémenter des protections contre les attaques CSRF
+  - [ ] Tester le serveur contre les attaques DoS
+- [ ] Assurer la conformité aux meilleures pratiques de sécurité
+  - [ ] Revoir les meilleures pratiques de sécurité pour les serveurs HTTP
+  - [ ] Mettre en œuvre des mesures de sécurité supplémentaires si nécessaire
+
+### Sprint 8: Documentation et Préparation au Déploiement
+- [ ] Ajouter des commentaires et des explications dans le code source
+  - [ ] Ajouter des commentaires détaillés pour chaque fonction et module
+  - [ ] Expliquer les parties complexes du code
+- [ ] Générer la documentation technique à partir des commentaires (par exemple, avec `rust```plaintext
+doc`)
+  - [ ] Configurer `rustdoc` pour générer la documentation
+  - [ ] Vérifier la qualité de la documentation générée
+- [ ] Écrire un guide détaillé pour la configuration du serveur
+  - [ ] Décrire toutes les options de configuration disponibles
+  - [ ] Fournir des exemples de configuration
+- [ ] Expliquer les options disponibles dans le fichier de configuration
+  - [ ] Documenter chaque option de configuration et son utilisation
+- [ ] Créer un guide d'utilisation pour les administrateurs et les utilisateurs
+  - [ ] Rédiger un guide pour l'installation et le démarrage du serveur
+  - [ ] Expliquer comment utiliser les principales fonctionnalités
+  - [ ] Inclure des exemples d'utilisation et des instructions pour les tâches courantes
