@@ -1,20 +1,47 @@
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::fs;
+
+#[derive(Deserialize, Debug)]
 pub struct Config {
-    host: String,
-    port: Vec<u8>,
+    pub servers: Vec<ServerConfig>,
 }
 
-use http::{Method, Request, Response, StatusCode};
-
-struct ServerConfig<'a> {
-    server_address: &'a str,
-    port: Vec<u32>,
-    body_size: u32,
-    error_page: &'a str,
-    default_server: String,
-    routes: Vec<Route<'a>>,
+#[derive(Deserialize, Debug)]
+pub struct ServerConfig {
+    pub server_name: String,
+    pub server_address: String,
+    pub ports: Vec<u16>,
+    pub error_pages: Option<ErrorPages>,
+    pub client_body_size_limit: usize,
+    pub routes: Option<HashMap<String, RouteConfig>>,
 }
 
-struct Route<'a> {
-    path: &'a str,
-    methods: Vec<Method>,
+#[derive(Deserialize, Debug)]
+pub struct ErrorPages {
+    pub error_400: Option<String>,
+    pub error_403: Option<String>,
+    pub error_404: Option<String>,
+    pub error_405: Option<String>,
+    pub error_413: Option<String>,
+    pub error_500: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RouteConfig {
+    pub accepted_methods: Vec<String>,
+    pub redirections: Option<HashMap<String, String>>,
+    pub root_directory: String,
+    pub default_file: Option<String>,
+    pub cgi: Option<HashMap<String, String>>,
+    pub directory_listing: bool,
+    pub default_file_if_directory: Option<String>,
+}
+
+impl Config {
+    pub fn load_from_file(path: &str) -> Result<Config, Box<dyn std::error::Error>> {
+        let content = fs::read_to_string(path)?;
+        let config: Config = serde_json::from_str(&content)?;
+        Ok(config)
+    }
 }

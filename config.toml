@@ -1,6 +1,0 @@
-[server]
-host = "localhost"
-ports = [7878, 11111]
-
-[server.routes]
-methods = ["GET"]

@@ -1,16 +1,16 @@
 mod config;
+mod request;
 
-use std::{fs::File, io::Read};
+use config::Config;
 
-use toml::Table;
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config_path = "config.json";
+    let config = Config::load_from_file(config_path)?;
 
-fn main() {
-    let mut file = File::open(&format!("config.toml")).unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
+    // Print the parsed configuration to verify
+    println!("{:#?}", config);
 
-    let main_table = contents.parse::<Table>().unwrap();
-    if let Some(server) = main_table.get("server") {
-        println!("{}", server);
-    }
+    // Your server initialization code here
+
+    Ok(())
 }

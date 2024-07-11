@@ -1,0 +1,47 @@
+{
+    "servers": [
+        {
+            "server_name": "example_server",
+            "server_address": "localhost",
+            "ports": [
+                8080,
+                8081
+            ],
+            "error_pages": {
+                "400": "/views/errors/400.html",
+                "403": "/views/errors/500.html",
+                "404": "/views/errors/404.html",
+                "405": "/views/errors/405.html",
+                "413": "/views/errors/413.html",
+                "500": "/views/errors/500.html"
+            },
+            "client_body_size_limit": 10485760,
+            "routes": {
+                "/": {
+                    "accepted_methods": [
+                        "GET",
+                        "POST"
+                    ],
+                    "redirections": {
+                        "/old": "/new"
+                    },
+                    "root_directory": "/var/www",
+                    "default_file": "index.html",
+                    "cgi": {
+                        ".py": "/usr/bin/python3"
+                    },
+                    "directory_listing": true,
+                    "default_file_if_directory": "index.html"
+                }
+            }
+        },
+        {
+            "server_address": "127.0.0.1",
+            "ports": [
+                9090
+            ],
+            "server_name": "another_server",
+            "client_body_size_limit": 5242880
+        }
+    ]
+}
