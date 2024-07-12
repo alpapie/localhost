@@ -4,11 +4,6 @@ use std::fs;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    pub servers: Vec<ServerConfig>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct ServerConfig {
     pub server_name: String,
     pub server_address: String,
     pub ports: Vec<u16>,
