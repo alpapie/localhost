@@ -1,4 +1,5 @@
 use std::process::exit;
+use std::time::{Duration, Instant};
 use std::{
     collections::HashMap, net::ToSocketAddrs
 };
@@ -24,39 +25,53 @@ pub fn server_start() {
                 Some(list) => list,
                 None => {
                     println!("error server: code 500");
-                    exit(0);
+                    LogError::new(format!("error: no listener created ")).log();
+                    exit(1);
                 },
             };
             let mut server = Server::new(&mut litenerss);
-            let mut events = Events::with_capacity(1024);
+            let mut events = Events::with_capacity(4096);
             
             loop {
-                server.poll.poll(&mut events, None).unwrap();
-    
-                for event in events.iter() {
-                    let token = event.token();
-                    // println!("NEW REQUEST {token:?}");
-                    if let Some(handler) = server.connection_handlers.get_mut(&token) {
-                        // println!("connection existant {handler:?}");
-                        handler.handle_event(&mut server.poll, event);
-                    } else if token.0 < server.listeners.len() {
-                        let listener = &mut server.listeners[token.0];
-                        match listener.accept() {
-                            Ok((stream, _addr)) => {
-                                // println!("nouvel connection {_addr:?}");
-                                server.handle_new_connection(stream);
+                match server.poll.poll(&mut events, Some(Duration::from_millis(5000))) {
+                    Ok(_) => {
+                        for event in events.iter() {
+                            let token = event.token();
+                            if token.0 < server.listeners.len() {
+                                let listener = &mut server.listeners[token.0];
+                                match listener.accept() {
+                                    Ok((stream, _)) => {
+                                        // println!("nouvel connection {_addr:?}");
+                                        server.handle_new_connection(stream);
+                                    }
+                                    Err(e) => {
+                                        println!("error: new connection error - {e}");
+                                        LogError::new(format!("Error accepting connection: {:?}", e)).log();
+                                    },
+                                }
                             }
-                            Err(e) => {
-                                LogError::new(format!("Error accepting connection: {:?}", e)).log();
-                            },
+                            if let Some(handler) = server.connection_handlers.get_mut(&token) {
+                                // println!("connection existant {handler:?}");
+                                if !handler.handle_event(event){
+                                   server.poll.registry()
+                                    .deregister(&mut handler.stream)
+                                    .expect("Failed to deregister stream");
+                                    server.connection_handlers.remove(&token);
+                                }
+                            } 
                         }
-                    }
-                }
+                        server.handle_timeout()
+                    },
+                    Err(e) => {
+                        println!("error: sever 500 - {e}");
+                        LogError::new(format!("error: {e}")).log();
+                    },
+                };
             }
-
         }
         Err(err) => {
-            println!("{err}")
+            println!("error: {err}");
+            LogError::new(format!("error: {err}")).log();
         }
     }
 }
@@ -118,28 +133,69 @@ pub struct Server<'a> {
 impl <'a> Server <'a>  {
     pub fn new(listeners: &'a mut Vec< TcpListener>) -> Self {
 
-        let poll = Poll::new().unwrap();
+        let poll = Poll::new().expect("Failed to create Poll instance");
+        let mut token_id=0;
         
           for (index, listener) in listeners.iter_mut().enumerate() {
+            token_id+=1;
             let token = Token(index);
-            poll.registry().register(listener, token, Interest::READABLE).unwrap();
+            if poll.registry().register(listener, token, Interest::READABLE).is_err(){
+                LogError::new(format!("Error: 500 register connection listener error")).log();
+            };
         }
 
         Server {
             listeners,
             poll,
             connection_handlers: HashMap::new(),
-            next_token:0
+            next_token:token_id
 
         }
     }
 
     pub fn handle_new_connection(&mut self, stream: TcpStream) {
-        let token = Token(self.next_token + self.listeners.len());
+        // set_linger_option(&stream, linger_duration).expect("Failed to set linger option");
+
+        if let Err(e) = stream.set_ttl(60) {
+            println!("error: timeout - {e}");
+            LogError::new(format!("Error: {e}")).log();
+        }
         self.next_token += 1;
+        let token = Token(self.next_token);
         let mut handler = ConnectionHandler::new(stream, token);
         self.poll.registry().register(&mut handler.stream, token, Interest::READABLE | Interest::WRITABLE).unwrap();
         self.connection_handlers.insert(token, handler);
     }
+
+    fn handle_timeout(&mut self) {
+        let now = Instant::now();
+        let timeout_duration = Duration::from_millis(1000);
+
+        // Remove connections that timed out from `connections` HashMap
+        self.connection_handlers.retain(|_, conn| {
+            if now.duration_since(conn.last_activity) > timeout_duration {
+                self.poll
+                    .registry()
+                    .deregister(&mut conn.stream)
+                    .expect("Failed to deregister stream due to timeout");
+                false
+            } else {
+                true
+            }
+        });
+    }
 }
 
+
+// use socket2::{SockRef, Socket};
+
+// fn set_linger_option(stream: &TcpStream, linger_duration: Option<Duration>) -> std::io::Result<()> {
+//     #[cfg(unix)]
+//     let socket = unsafe { Socket::from_raw_fd(stream.as_raw_fd()) };
+//     #[cfg(windows)]
+//     let socket = unsafe { Socket::from_raw_socket(stream.as_raw_socket()) };
+
+//     SockRef::from(&socket).set_linger(linger_duration)?;
+//     std::mem::forget(socket); // Important to avoid closing the file descriptor
+//     Ok(())
+// }

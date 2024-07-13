@@ -1,4 +1,5 @@
-use std::io::{BufRead, BufReader, ErrorKind, Read, Write};
+use std::io::{BufRead, BufReader, Error, ErrorKind, Read, Write};
+use std::time::Instant;
 use mio::{Poll, Token};
 use mio::net::TcpStream;
 use std::io::{ Result as IoResult};
@@ -9,23 +10,34 @@ use crate::error::LogError;
 pub struct ConnectionHandler {
     pub stream: TcpStream,
     pub token: Token,
+    pub last_activity: Instant,
 }
 
 impl ConnectionHandler {
     pub fn new(stream: TcpStream, token: Token) -> Self {
-        ConnectionHandler { stream, token }
+        ConnectionHandler { stream, token,last_activity: Instant::now() }
     }
 
-    pub fn handle_event(&mut self, poll: &mut Poll, event: &mio::event::Event) {
+    pub fn handle_event(&mut self, event: &mio::event::Event) -> bool{
         if event.is_readable() {
-            self.read_event();
+            match self.read_event(){
+                Ok((head,body)) => {
+                    // read requet
+                    self.write_event();
+                },
+                Err(err) => {
+                    println!("Error read request {:?}", err);
+                    LogError::new(format!("Error read request {:?}", err)).log();
+                },
+            } 
         }
-        if event.is_writable() {
-            self.write_event();
-        }
+        // if event.is_writable() {
+        //     self.write_event();
+        // }
+       return true
     }
 
-    pub fn read_event(&mut self) {
+    pub fn read_event(&mut self) -> Result<(String, Vec<u8>),Error>{
         let mut buffer = [0; 1024];
         let mut head = String::new();
         let mut body = Vec::new();
@@ -33,31 +45,24 @@ impl ConnectionHandler {
         let mut buf_reader = BufReader::new(&mut self.stream);
 
         loop {
-            // Lire les données depuis le stream
             match buf_reader.read(&mut buffer) {
                 Ok(bytes_read) => {
-                    // Fin de la connexion si aucun octet n'a été lu
                     if bytes_read == 0 {
                         if is_body {
                             break;
                         } else {
-                            return;
+                            return Err(Error::new(ErrorKind::Interrupted,"parse data error"));
                         }
                     }
-
-                    // Convertir le tampon en chaîne
                     let chunk = match String::from_utf8(buffer[..bytes_read].to_vec()) {
                         Ok(chunk) => chunk,
                         Err(_) => {
-                            // Gestion des données non UTF-8, traiter les données brutes
                             String::from_utf8_lossy(&buffer[..bytes_read]).into()
                         },
                     };
 
-                    // Vérifier la présence de la fin de l'en-tête
                     if let Some(index) = chunk.find("\r\n\r\n") {
                         if !is_body {
-                            // Extraire l'en-tête et le corps
                             head.push_str(&chunk[..index]);
                             body.extend_from_slice(&buffer[index + 4..bytes_read]);
                             is_body = true;
@@ -67,43 +72,25 @@ impl ConnectionHandler {
                         break;
                     } else {
                         if is_body {
-                            // Ajouter au corps si déjà en mode corps
                             body.extend_from_slice(&buffer[..bytes_read]);
                         } else {
-                            // Ajouter à l'en-tête si en mode en-tête
                             head.push_str(&chunk);
                         }
                     }
                 },
-                Err(err) => match err.kind() {
-                    ErrorKind::ConnectionReset => {
-                        LogError::new(format!("Connection reset by peer: {:?}", err)).log();
-                        return;
-                    },
-                    _ => {
-                        LogError::new(format!("Error reading from connection: {:?}", err)).log();
-                        return;
-                    }
-                },
+                Err(err) => return  Err(err),
             }
         }
-
-        // Lire le reste du corps s'il y en a
         while let Ok(bytes_read) = buf_reader.read(&mut buffer) {
             if bytes_read == 0 {
                 break;
             }
             body.extend_from_slice(&buffer[..bytes_read]);
         }
-
-        // Afficher la requête reçue
-        println!("Request Header: {:#?}", head);
-        println!("Request Body: {:#?}", body);
+       Ok((head,body))
     }
 
     pub fn write_event(&mut self) {
-        // Gérer l'écriture de données sur le stream
-        // Placeholder pour l'écriture, peut-être une réponse HTTP
         let response = b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nalpapierer";
         match self.stream.write_all(response) {
             Ok(_) => println!("Response sent successfully"),
