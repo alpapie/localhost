@@ -29,45 +29,9 @@ pub fn server_start() {
                     exit(1);
                 },
             };
-            let mut server = Server::new(&mut litenerss);
-            let mut events = Events::with_capacity(4096);
-            
-            loop {
-                match server.poll.poll(&mut events, Some(Duration::from_millis(5000))) {
-                    Ok(_) => {
-                        for event in events.iter() {
-                            let token = event.token();
-                            if token.0 < server.listeners.len() {
-                                let listener = &mut server.listeners[token.0];
-                                match listener.accept() {
-                                    Ok((stream, _)) => {
-                                        // println!("nouvel connection {_addr:?}");
-                                        server.handle_new_connection(stream);
-                                    }
-                                    Err(e) => {
-                                        println!("error: new connection error - {e}");
-                                        LogError::new(format!("Error accepting connection: {:?}", e)).log();
-                                    },
-                                }
-                            }
-                            if let Some(handler) = server.connection_handlers.get_mut(&token) {
-                                // println!("connection existant {handler:?}");
-                                if !handler.handle_event(event){
-                                   server.poll.registry()
-                                    .deregister(&mut handler.stream)
-                                    .expect("Failed to deregister stream");
-                                    server.connection_handlers.remove(&token);
-                                }
-                            } 
-                        }
-                        server.handle_timeout()
-                    },
-                    Err(e) => {
-                        println!("error: sever 500 - {e}");
-                        LogError::new(format!("error: {e}")).log();
-                    },
-                };
-            }
+            let server = Server::new(&mut litenerss);
+            println!("create server");
+            server.handle_request()
         }
         Err(err) => {
             println!("error: {err}");
@@ -153,6 +117,47 @@ impl <'a> Server <'a>  {
         }
     }
 
+    pub fn handle_request(mut self) -> ! {
+        let mut events = Events::with_capacity(4096);
+                
+        loop {
+            match self.poll.poll(&mut events, Some(Duration::from_millis(5000))) {
+                Ok(_) => {
+                    for event in events.iter() {
+                        let token = event.token();
+                        if token.0 < self.listeners.len() {
+                            let listener = &mut self.listeners[token.0];
+                            match listener.accept() {
+                                Ok((stream, _)) => {
+                                    // println!("nouvel connection {_addr:?}");
+                                    self.handle_new_connection(stream);
+                                }
+                                Err(e) => {
+                                    println!("error: new connection error - {e}");
+                                    LogError::new(format!("Error accepting connection: {:?}", e)).log();
+                                },
+                            }
+                        }
+                        if let Some(handler) = self.connection_handlers.get_mut(&token) {
+                            // println!("connection existant {handler:?}");
+                            if !handler.handle_event(event){
+                               self.poll.registry()
+                                .deregister(&mut handler.stream)
+                                .expect("Failed to deregister stream");
+                                self.connection_handlers.remove(&token);
+                            }
+                        } 
+                    }
+                    self.handle_timeout()
+                },
+                Err(e) => {
+                    println!("error: sever 500 - {e}");
+                    LogError::new(format!("error: {e}")).log();
+                },
+            };
+        }
+    }
+        
     pub fn handle_new_connection(&mut self, stream: TcpStream) {
         // set_linger_option(&stream, linger_duration).expect("Failed to set linger option");
 

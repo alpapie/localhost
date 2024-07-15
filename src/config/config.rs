@@ -22,7 +22,7 @@ pub struct ErrorPages {
     pub error_500: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug,Default,Clone)]
 pub struct RouteConfig {
     pub accepted_methods: Vec<String>,
     pub redirections: Option<HashMap<String, String>>,

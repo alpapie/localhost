@@ -1,0 +1,10 @@
+2024-07-13 14:49:15.341722587 - Error read request-> Os { code: 11 kind: WouldBlock message: "Resource temporarily unavailable" }
+2024-07-13 14:49:15.342659579 - Error read request-> Custom { kind: Interrupted error: "parse data error" }
+2024-07-13 15:40:50.437614645 - Error read request-> Os { code: 11 kind: WouldBlock message: "Resource temporarily unavailable" }
+2024-07-13 15:40:50.438783875 - Error read request-> Custom { kind: Interrupted, error: "parse data error" }
+2024-07-13 15:41:13.162201544 - Error read request-> Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" }
+2024-07-13 15:41:13.163269025 - Error read request-> Custom { kind: Interrupted, error: "parse data error" }
+2024-07-13 15:41:38.039314435 - Error read request-> Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" }
+2024-07-13 15:41:38.040504394 - Error read request-> Custom { kind: Interrupted, error: "parse data error" }
+2024-07-15 15:36:02.130143836 - error: invalid type: string "php", expected a map at line 28 column 24
+2024-07-15 22:47:51.116726277 - error: invalid type: string "php", expected a map at line 28 column 24

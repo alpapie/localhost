@@ -1,10 +1,13 @@
-use std::io::{BufRead, BufReader, Error, ErrorKind, Read, Write};
+use std::io::{ BufReader, Error, ErrorKind, Read, Write};
 use std::time::Instant;
-use mio::{Poll, Token};
+use mio:: Token;
 use mio::net::TcpStream;
-use std::io::{ Result as IoResult};
 
+use crate::config::config::RouteConfig;
+use crate::config::Config;
 use crate::error::LogError;
+use crate::request::parse_header::HttpRequest;
+use crate::response::response::Response;
 
 #[derive(Debug)]
 pub struct ConnectionHandler {
@@ -22,12 +25,15 @@ impl ConnectionHandler {
         if event.is_readable() {
             match self.read_event(){
                 Ok((head,body)) => {
-                    // read requet
-                    self.write_event();
+
+                    print!("header : {head}, body :{body:?}");
+                    let response=Response::new("".to_owned());
+                    // response.response_200(route);
+                    self.write_event("alpapie");
                 },
                 Err(err) => {
-                    println!("Error read request {:?}", err);
-                    LogError::new(format!("Error read request {:?}", err)).log();
+                    println!("Error read request-> {:?}", err);
+                    LogError::new(format!("Error read request-> {:?}", err)).log();
                 },
             } 
         }
@@ -90,13 +96,37 @@ impl ConnectionHandler {
        Ok((head,body))
     }
 
-    pub fn write_event(&mut self) {
-        let response = b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nalpapierer";
-        match self.stream.write_all(response) {
+    pub fn write_event(&mut self,data : &str) {
+        match self.stream.write_all(data.as_bytes()) {
             Ok(_) => println!("Response sent successfully"),
             Err(err) => {
                 LogError::new(format!("Error writing response: {:?}", err)).log();
             }
         }
+    }
+
+    pub fn get_path(&self,config: Config, path: String )->(bool,RouteConfig){
+        if config.routes.is_some() {
+            match config.routes.unwrap().get(&path) {
+                Some(route) =>{
+                   return  (true, route.clone())
+                },
+                None => return  (false,RouteConfig::default()),
+            }
+        }
+        return (false,RouteConfig::default())
+    }
+
+    pub fn check(mut self,config: Config, request: HttpRequest )->bool{
+        let get_path=self.get_path(config, request.path);
+        if get_path.0 {
+           return get_path.1.accepted_methods.contains(&request.method)
+        }
+        self.write_event("404");
+        return false
+    }
+
+    pub fn check_body_size(self,config: Config,body_size: usize)->bool{
+        config.client_body_size_limit==body_size
     }
 }
