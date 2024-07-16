@@ -17,7 +17,7 @@ pub fn server_start() {
     let config = Config::load_from_file(config_path);
     match config {
         Ok(config) => {
-            let mut listeners: Option<Vec<TcpListener>> = create_listeners(config.ports);
+            let mut listeners: Option<Vec<TcpListener>> = create_listeners(config.ports.clone());
             if listeners.is_none() || listeners.as_ref().unwrap().is_empty() {
                 listeners = Some(vec![create_default_listener().unwrap()]);
             }
@@ -29,7 +29,7 @@ pub fn server_start() {
                     exit(1);
                 },
             };
-            let server = Server::new(&mut litenerss);
+            let server = Server::new(&mut litenerss,&config);
             println!("create server");
             server.handle_request()
         }
@@ -90,12 +90,13 @@ fn create_default_listener() -> Result<TcpListener, String> {
 pub struct Server<'a> {
    pub listeners: &'a mut Vec< TcpListener>,
    pub poll: Poll,
-   pub connection_handlers: HashMap<Token, ConnectionHandler>,
+   pub connection_handlers: HashMap<Token, ConnectionHandler<'a>>,
    pub next_token: usize,
+   pub config: &'a Config
 }
 
 impl <'a> Server <'a>  {
-    pub fn new(listeners: &'a mut Vec< TcpListener>) -> Self {
+    pub fn new(listeners: &'a mut Vec< TcpListener>, config: &'a Config) -> Self {
 
         let poll = Poll::new().expect("Failed to create Poll instance");
         let mut token_id=0;
@@ -112,8 +113,8 @@ impl <'a> Server <'a>  {
             listeners,
             poll,
             connection_handlers: HashMap::new(),
-            next_token:token_id
-
+            next_token:token_id,
+            config
         }
     }
 
@@ -167,7 +168,7 @@ impl <'a> Server <'a>  {
         }
         self.next_token += 1;
         let token = Token(self.next_token);
-        let mut handler = ConnectionHandler::new(stream, token);
+        let mut handler = ConnectionHandler::new(stream, token,self.config);
         self.poll.registry().register(&mut handler.stream, token, Interest::READABLE | Interest::WRITABLE).unwrap();
         self.connection_handlers.insert(token, handler);
     }

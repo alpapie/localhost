@@ -15,7 +15,7 @@
     },
     "client_body_size_limit": 10485760,
     "routes": {
-        "/": {
+        "/test/python3": {
             "accepted_methods": [
                 "GET",
                 "POST"
@@ -23,7 +23,7 @@
             "redirections": {
                 "/old": "/new"
             },
-            "root_directory": "/var/www",
+            "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/log",
             "default_file": "index.html",
             "cgi": {
                 ".py": "/usr/bin/python3"

@@ -10,26 +10,38 @@ use crate::request::parse_header::HttpRequest;
 use crate::response::response::Response;
 
 #[derive(Debug)]
-pub struct ConnectionHandler {
+pub struct ConnectionHandler <'a>{
     pub stream: TcpStream,
     pub token: Token,
     pub last_activity: Instant,
+    pub config: &'a Config
 }
 
-impl ConnectionHandler {
-    pub fn new(stream: TcpStream, token: Token) -> Self {
-        ConnectionHandler { stream, token,last_activity: Instant::now() }
+impl <'a> ConnectionHandler <'a>{
+    pub fn new(stream: TcpStream, token: Token,config: &'a Config) -> Self {
+        ConnectionHandler { stream, token,last_activity: Instant::now(),config }
     }
 
     pub fn handle_event(&mut self, event: &mio::event::Event) -> bool{
         if event.is_readable() {
             match self.read_event(){
                 Ok((head,body)) => {
-
-                    print!("header : {head}, body :{body:?}");
-                    let response=Response::new("".to_owned());
-                    // response.response_200(route);
-                    self.write_event("alpapie");
+                    let b_request= HttpRequest::parse(&head);
+                    if let Ok(request) =b_request{
+                        if self.check(&request){
+                            let route=self.get_path(&request.path);
+                            let mut response=Response::new();
+                            if let Some(res)=response.response_200(route.1,request.path){
+                                print!("header : {:?}",res);
+                                self.write_event(&res);
+                                return true
+                            }
+                        }
+                    }
+                    let mut response=Response::new();
+                    let res=response.response_error(404,self.config);
+                    self.write_event(&res);
+                    return true;
                 },
                 Err(err) => {
                     println!("Error read request-> {:?}", err);
@@ -37,6 +49,7 @@ impl ConnectionHandler {
                 },
             } 
         }
+        println!("reade erroeoeoeoeoeo");
         // if event.is_writable() {
         //     self.write_event();
         // }
@@ -105,9 +118,9 @@ impl ConnectionHandler {
         }
     }
 
-    pub fn get_path(&self,config: Config, path: String )->(bool,RouteConfig){
-        if config.routes.is_some() {
-            match config.routes.unwrap().get(&path) {
+    pub fn get_path(&self, path: &String )->(bool,RouteConfig){
+        if let  Some(config)=&self.config.routes {
+            match config.get(path) {
                 Some(route) =>{
                    return  (true, route.clone())
                 },
@@ -117,8 +130,8 @@ impl ConnectionHandler {
         return (false,RouteConfig::default())
     }
 
-    pub fn check(mut self,config: Config, request: HttpRequest )->bool{
-        let get_path=self.get_path(config, request.path);
+    pub fn check(&mut self,request: &HttpRequest )->bool{
+        let get_path=self.get_path(&request.path.clone());
         if get_path.0 {
            return get_path.1.accepted_methods.contains(&request.method)
         }

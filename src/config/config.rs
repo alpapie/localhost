@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug,Default)]
 pub struct Config {
     pub server_name: String,
     pub server_address: String,
