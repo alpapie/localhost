@@ -175,3 +175,18 @@
 2024-07-16 19:54:36.038254530 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
 2024-07-16 19:54:49.930942049 - Error read request-> Os { code: 104, kind: ConnectionReset, message: "Connection reset by peer" }
 2024-07-16 19:54:49.931054405 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 19:58:10.506888692 - Error read request-> Os { code: 104, kind: ConnectionReset, message: "Connection reset by peer" }
+2024-07-16 19:58:10.507034055 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 20:00:17.805701570 - Error read request-> Os { code: 104, kind: ConnectionReset, message: "Connection reset by peer" }
+2024-07-16 20:00:17.805907765 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 20:01:18.877227160 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 20:01:26.021467577 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 20:01:26.868289430 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 20:01:28.294625537 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 20:05:33.596995602 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 20:08:50.821178061 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 20:10:22.408770879 - error: missing field `directory_listing` at line 41 column 9
+2024-07-16 20:10:53.340925517 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 20:21:07.056354750 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 20:21:07.076287647 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-16 20:21:38.203969927 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }

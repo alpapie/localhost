@@ -40,6 +40,14 @@ impl Response {
             },
             None => return None,
             }  
+        }else if !route.directory_listing {
+            match self.parse_page(&(route.root_directory+&path)) {
+                Some(content) => {
+                    self.header.push(format!("{} {}","Content-Length:", content.len().to_string()));
+                    self.header.push(format!("{} {}","\r\n".to_owned(), content.to_string()));
+                },
+                None =>return None,
+            }
         }
         
         Some(self.format_header())

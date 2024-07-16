@@ -32,7 +32,6 @@ impl <'a> ConnectionHandler <'a>{
                             let route=self.get_path(&request.path);
                             let mut response=Response::new();
                             if let Some(res)=response.response_200(route.1,request.path){
-                                // print!("header : {:?}",res);
                                 self.write_event(&res);
                                 return true
                             }
@@ -49,9 +48,6 @@ impl <'a> ConnectionHandler <'a>{
                 },
             } 
         }
-        let mut response=Response::new();
-        let res=response.response_error(400,self.config);
-        self.write_event(&res);
        return true
     }
 
