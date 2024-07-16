@@ -1,4 +1,4 @@
-use std::io::{ BufReader, Error, ErrorKind, Read, Write};
+use std::io::{ BufRead, BufReader, Error, ErrorKind, Read, Write};
 use std::time::Instant;
 use mio:: Token;
 use mio::net::TcpStream;
@@ -24,7 +24,7 @@ impl <'a> ConnectionHandler <'a>{
 
     pub fn handle_event(&mut self, event: &mio::event::Event) -> bool{
         if event.is_readable() {
-            match self.read_event(){
+            match self.read_event() {
                 Ok((head,body)) => {
                     let b_request= HttpRequest::parse(&head);
                     if let Ok(request) =b_request{
@@ -32,7 +32,7 @@ impl <'a> ConnectionHandler <'a>{
                             let route=self.get_path(&request.path);
                             let mut response=Response::new();
                             if let Some(res)=response.response_200(route.1,request.path){
-                                print!("header : {:?}",res);
+                                // print!("header : {:?}",res);
                                 self.write_event(&res);
                                 return true
                             }
@@ -49,64 +49,50 @@ impl <'a> ConnectionHandler <'a>{
                 },
             } 
         }
-        println!("reade erroeoeoeoeoeo");
-        // if event.is_writable() {
-        //     self.write_event();
-        // }
+        let mut response=Response::new();
+        let res=response.response_error(400,self.config);
+        self.write_event(&res);
        return true
     }
 
-    pub fn read_event(&mut self) -> Result<(String, Vec<u8>),Error>{
-        let mut buffer = [0; 1024];
+    pub fn read_event(&mut self) -> Result<(String, Vec<u8>), Error> {
+        let mut buf_reader = BufReader::new(&mut self.stream);
         let mut head = String::new();
         let mut body = Vec::new();
-        let mut is_body = false;
-        let mut buf_reader = BufReader::new(&mut self.stream);
+        let mut content_length: Option<usize> = None;
 
+        // Read headers
         loop {
-            match buf_reader.read(&mut buffer) {
-                Ok(bytes_read) => {
-                    if bytes_read == 0 {
-                        if is_body {
-                            break;
-                        } else {
-                            return Err(Error::new(ErrorKind::Interrupted,"parse data error"));
-                        }
+            let mut line = String::new();
+            match buf_reader.read_line(&mut line) {
+                Ok(0) => break, // End of stream
+                Ok(_) => {
+                    if line == "\r\n" {
+                        break; // End of headers
                     }
-                    let chunk = match String::from_utf8(buffer[..bytes_read].to_vec()) {
-                        Ok(chunk) => chunk,
-                        Err(_) => {
-                            String::from_utf8_lossy(&buffer[..bytes_read]).into()
-                        },
-                    };
+                    if line.starts_with("Content-Length:") {
+                        content_length = line[15..].trim().parse().ok();
+                    }
+                    head.push_str(&line);
+                }
+                Err(err) => return Err(err),
+            }
+        }
 
-                    if let Some(index) = chunk.find("\r\n\r\n") {
-                        if !is_body {
-                            head.push_str(&chunk[..index]);
-                            body.extend_from_slice(&buffer[index + 4..bytes_read]);
-                            is_body = true;
-                        } else {
-                            body.extend_from_slice(&buffer[..bytes_read]);
-                        }
-                        break;
-                    } else {
-                        if is_body {
-                            body.extend_from_slice(&buffer[..bytes_read]);
-                        } else {
-                            head.push_str(&chunk);
-                        }
-                    }
-                },
-                Err(err) => return  Err(err),
-            }
+        // Debug print for header content
+        println!("Headers: {}", head);
+
+        // Read body if content length is specified
+        if let Some(length) = content_length {
+            let mut buffer = vec![0; length];
+            buf_reader.read_exact(&mut buffer)?;
+            body = buffer;
         }
-        while let Ok(bytes_read) = buf_reader.read(&mut buffer) {
-            if bytes_read == 0 {
-                break;
-            }
-            body.extend_from_slice(&buffer[..bytes_read]);
-        }
-       Ok((head,body))
+
+        // Debug print for body content
+        println!("Body: {:?}", body);
+
+        Ok((head, body))
     }
 
     pub fn write_event(&mut self,data : &str) {
@@ -116,6 +102,7 @@ impl <'a> ConnectionHandler <'a>{
                 LogError::new(format!("Error writing response: {:?}", err)).log();
             }
         }
+        let _ = self.stream.flush();
     }
 
     pub fn get_path(&self, path: &String )->(bool,RouteConfig){
@@ -135,7 +122,6 @@ impl <'a> ConnectionHandler <'a>{
         if get_path.0 {
            return get_path.1.accepted_methods.contains(&request.method)
         }
-        self.write_event("404");
         return false
     }
 

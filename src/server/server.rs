@@ -30,7 +30,6 @@ pub fn server_start() {
                 },
             };
             let server = Server::new(&mut litenerss,&config);
-            println!("create server");
             server.handle_request()
         }
         Err(err) => {

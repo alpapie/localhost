@@ -12,15 +12,16 @@ use super::HttpStatus;
 #[derive(Debug,Default,Clone)]
 pub struct Response{
     pub status: u32,
-    pub header:  HashMap<String,String>,
+    pub header:  Vec<String>,
     pub content: String,
 }
 
 impl Response {
     pub fn new()->Self{
-        let mut header= HashMap::new();
-        header.insert("HTTP/1.1".to_owned(), "200 OK".to_owned());
-        header.insert("Content-Type:".to_owned(), "text/html".to_owned());
+        let mut header= Vec::new();
+
+        header.push("HTTP/1.1 200 OK".to_owned());
+        header.push("Content-Type: text/html".to_owned());
         return Self { status: 200,
             header, 
             content: "".to_owned() 
@@ -33,8 +34,8 @@ impl Response {
         if route.directory_listing{
           match self.list_directory(format!("{}{}",route.root_directory,path)) {
             Some(content) => {
-                self.header.insert("Content-Length:".to_owned(), content.len().to_string());
-                self.header.insert("\r\n".to_owned(), content.to_string());
+                self.header.push(format!("{} {}","Content-Length:", content.len().to_string()));
+                self.header.push(format!("{} {}","\r\n".to_owned(), content.to_string()));
 
             },
             None => return None,
@@ -45,15 +46,11 @@ impl Response {
     }
 
     fn format_header(&mut self) -> String {
-        let formatted_entries: Vec<String> = self.header
-        .iter()
-        .map(|(k, v)| format!("{} {}", k, v))
-        .collect();
-        formatted_entries.join("\r\n")
+        self.header.join("\r\n")
     }
     
     pub fn response_error(&mut self, status:u16, config: &Config)->String{
-        self.header.insert("HTTP/1.1".to_owned(), HttpStatus::from_code(status).to_string());
+        self.header[0]=format!("{} {}","HTTP/1.1".to_owned(), HttpStatus::from_code(status).to_string());
         if let Some( page_error) =&config.error_pages{
           let path_page= match status {
                400=>&page_error.error_400,
@@ -65,12 +62,15 @@ impl Response {
            };
            if let Some(path)= path_page{
             if let Some(content) = self.parse_page(&path){
-                self.header.insert("".to_owned(), content);
+                self.header.push(format!("{} {}","Content-Length:".to_owned(), content.len().to_string()));
+                self.header.push(format!("{} {}","\r\n".to_owned(), content));
                 return self.format_header() ;
             }
            }
         }
-        self.header.insert("\r\n".to_owned(), self.content_error(status));
+        let cont=self.content_error(status);
+        self.header.push(format!("{} {}","Content-Length:".to_owned(), cont.len().to_string()));
+        self.header.push(format!("{} {}","\r\n".to_owned(),cont ));
         self.format_header()
     }
 
@@ -179,6 +179,7 @@ impl Response {
             code,
             html_close
         )
+        // "alpapie".to_owned()
     }
     
 }
