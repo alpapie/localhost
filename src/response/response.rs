@@ -3,6 +3,8 @@ use std::path::Path;
 
 use std::{collections::HashMap};
 
+use localhost::is_directory;
+
 use crate::config::config::RouteConfig;
 use crate::config::Config;
 
@@ -28,10 +30,8 @@ impl Response {
         }
     }
 
-    // pub fn send_response(&mut self, )
-
     pub fn response_200(&mut self,route: RouteConfig,path: String)->Option<String>{
-        if route.directory_listing{
+        if route.directory_listing {
           match self.list_directory(format!("{}{}",route.root_directory,path)) {
             Some(content) => {
                 self.header.push(format!("{} {}","Content-Length:", content.len().to_string()));
@@ -41,6 +41,10 @@ impl Response {
             None => return None,
             }  
         }else if !route.directory_listing {
+            if route.cgi.is_some(){
+                // cgi traitement -> birame
+                
+            }
             match self.parse_page(&(route.root_directory+&path)) {
                 Some(content) => {
                     self.header.push(format!("{} {}","Content-Length:", content.len().to_string()));
@@ -91,6 +95,11 @@ impl Response {
     
     pub fn list_directory(&mut self, path_t: String) ->Option<String>{
         let mut response = String::new();
+        let p=Path::new(&path_t);
+        if !is_directory(p){
+            return None;
+        }
+
         let paths_p = fs::read_dir(&path_t);
         response.push_str("<html><body><h1>Directory Listing</h1><ul>");
         if let Ok(paths)= paths_p{
@@ -100,13 +109,13 @@ impl Response {
                     Ok(entry) => {
                         if let Some(file_name_str) = entry.path().display().to_string().strip_prefix(&path_t){
                             response.push_str(&format!("<li><a href=\"{}\">{}</a></li>", file_name_str, file_name_str));
-                            response.push_str("</ul></body></html>");
-                            return Some(response)
                         } ;
                     },
                     Err(_) => return None,
                 }
             }
+            response.push_str("</ul></body></html>\n");
+            return Some(response)
         }
         None
     }
@@ -187,7 +196,6 @@ impl Response {
             code,
             html_close
         )
-        // "alpapie".to_owned()
     }
     
 }

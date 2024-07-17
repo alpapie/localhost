@@ -26,25 +26,46 @@ impl <'a> ConnectionHandler <'a>{
         if event.is_readable() {
             match self.read_event() {
                 Ok((head,body)) => {
+                    if head.len()==0{
+                        return false
+                    }
+                    println!("head {} ->len({}) body {:?} ->({})",head,head.len(),body,body.len());
                     let b_request= HttpRequest::parse(&head);
                     if let Ok(request) =b_request{
-                        if self.check(&request){
-                            let route=self.get_path(&request.path);
-                            let mut response=Response::new();
-                            if let Some(res)=response.response_200(route.1,request.path){
+                        let route=self.get_path(&request.path);
+                        if route.0{
+                            if self.check(&request){
+                                let mut response=Response::new();
+                                let path= match request.path.strip_prefix(&self.config.alias ) {
+                                    Some(content) => content.to_owned(),
+                                    None => "".to_owned(),
+                                };
+                                if let Some(res)=response.response_200(route.1,path){
+                                    self.write_event(&res);
+                                    return true
+                                }
+                            }else {
+                                let mut response=Response::new();
+                                let res=response.response_error(405,self.config);
                                 self.write_event(&res);
-                                return true
+                                return true;
                             }
+                        }else{
+                            let mut response=Response::new();
+                            let res=response.response_error(404,self.config);
+                            self.write_event(&res);
+                            return true;
                         }
                     }
                     let mut response=Response::new();
-                    let res=response.response_error(404,self.config);
+                    let res=response.response_error(400,self.config);
                     self.write_event(&res);
                     return true;
                 },
                 Err(err) => {
                     println!("Error read request-> {:?}", err);
                     LogError::new(format!("Error read request-> {:?}", err)).log();
+                    // return false;
                 },
             } 
         }
@@ -75,18 +96,11 @@ impl <'a> ConnectionHandler <'a>{
             }
         }
 
-        // Debug print for header content
-        println!("Headers: {}", head);
-
-        // Read body if content length is specified
         if let Some(length) = content_length {
             let mut buffer = vec![0; length];
             buf_reader.read_exact(&mut buffer)?;
             body = buffer;
         }
-
-        // Debug print for body content
-        println!("Body: {:?}", body);
 
         Ok((head, body))
     }
@@ -102,12 +116,15 @@ impl <'a> ConnectionHandler <'a>{
     }
 
     pub fn get_path(&self, path: &String )->(bool,RouteConfig){
-        if let  Some(config)=&self.config.routes {
-            match config.get(path) {
-                Some(route) =>{
-                   return  (true, route.clone())
-                },
-                None => return  (false,RouteConfig::default()),
+        if path.starts_with(&self.config.alias) || &self.config.alias==path{
+            if let  Some(config)=&self.config.routes {
+               
+                match config.get(path) {
+                    Some(route) =>{
+                    return  (true, route.clone())
+                    },
+                    None => return  (false,RouteConfig::default()),
+                }
             }
         }
         return (false,RouteConfig::default())

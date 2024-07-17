@@ -14,8 +14,9 @@
         "500": "/views/errors/500.html"
     },
     "client_body_size_limit": 10485760,
+     "alias":"/test",
     "routes": {
-        "/": {
+        "/test": {
             "accepted_methods": [
                 "GET",
                 "POST"
@@ -25,14 +26,12 @@
             },
             "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test/html",
             "default_file": "index.html",
-            "cgi": {
-                ".py": "/usr/bin/python3"
-            },
+            "cgi": "python",
             "directory_listing": true,
             "default_file_if_directory": "index.html"
         }
         ,
-        "/test.html": {
+        "/test/test.html": {
             "accepted_methods": [
                 "GET",
                 "POST"

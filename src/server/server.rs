@@ -140,13 +140,13 @@ impl <'a> Server <'a>  {
                         }
                         if let Some(handler) = self.connection_handlers.get_mut(&token) {
                             // println!("connection existant {handler:?}");
-                            handler.handle_event(event);
-                            // if !handler.handle_event(event){
-                            //    self.poll.registry()
-                            //     .deregister(&mut handler.stream)
-                            //     .expect("Failed to deregister stream");
-                            //     self.connection_handlers.remove(&token);
-                            // }
+                            // handler.handle_event(event);
+                            if !handler.handle_event(event){
+                               self.poll.registry()
+                                .deregister(&mut handler.stream)
+                                .expect("Failed to deregister stream");
+                                self.connection_handlers.remove(&token);
+                            }
                         } 
                     }
                     self.handle_timeout()

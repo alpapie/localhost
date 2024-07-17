@@ -190,3 +190,46 @@
 2024-07-16 20:21:07.056354750 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
 2024-07-16 20:21:07.076287647 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
 2024-07-16 20:21:38.203969927 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:26:46.939403444 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:26:47.186384379 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:27:28.798902878 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:27:30.012621329 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:27:31.197201409 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:27:39.070794877 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:27:57.131104251 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:28:00.686966671 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:28:13.492508287 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:28:13.647542352 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:28:18.567444372 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:28:52.379710728 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:29:55.559109894 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:30:14.488210420 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:31:12.863542974 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:31:14.021264579 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:31:14.827014827 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:31:15.032608168 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:31:15.217799996 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:31:15.390047777 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:31:15.572933466 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:31:15.731331045 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:31:15.893859390 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:31:16.101964707 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:31:21.423649451 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:32:02.046710704 - Error read request-> Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" }
+2024-07-17 11:32:02.048059892 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:33:07.281670040 - Error read request-> Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" }
+2024-07-17 11:33:07.282354611 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:33:13.489730035 - Error read request-> Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" }
+2024-07-17 11:33:13.490463798 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:45:41.056093067 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:48:01.732632596 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:48:09.299075906 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:48:22.210700974 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 11:48:39.092535786 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 12:03:28.416359543 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 12:04:07.859856435 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 12:04:25.734372215 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 12:04:46.307546069 - Error writing response: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+2024-07-17 12:17:52.787042402 - Error read request-> Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" }
+2024-07-17 12:23:40.260424985 - error: missing field `alias` at line 33 column 9
+2024-07-17 12:24:27.372415787 - error: missing field `alias` at line 33 column 9

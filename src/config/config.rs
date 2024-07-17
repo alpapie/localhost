@@ -10,6 +10,7 @@ pub struct Config {
     pub error_pages: Option<ErrorPages>,
     pub client_body_size_limit: usize,
     pub routes: Option<HashMap<String, RouteConfig>>,
+    pub alias : String
 }
 
 #[derive(Deserialize, Debug)]
@@ -28,9 +29,9 @@ pub struct RouteConfig {
     pub redirections: Option<HashMap<String, String>>,
     pub root_directory: String,
     pub default_file: Option<String>,
-    pub cgi: Option<HashMap<String, String>>,
+    pub cgi: Option<String>,
     pub directory_listing: bool,
-    pub default_file_if_directory: Option<String>,
+    pub default_file_if_directory: Option<String>
 }
 
 impl Config {
