@@ -14,16 +14,14 @@
         "500": "/views/errors/500.html"
     },
     "client_body_size_limit": 10485760,
-     "alias":"/test",
+    "alias":"/test",
     "routes": {
         "/test": {
             "accepted_methods": [
                 "GET",
                 "POST"
             ],
-            "redirections": {
-                "/old": "/new"
-            },
+            "redirections": "/test/test.html",
             "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test/html",
             "default_file": "index.html",
             "cgi": "python",
@@ -36,6 +34,7 @@
                 "GET",
                 "POST"
             ],
+            "redirections": "/test/test.html",
             "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test/html",
             "directory_listing": false,
             "default_file_if_directory": "index.html"

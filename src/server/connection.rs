@@ -29,38 +29,18 @@ impl <'a> ConnectionHandler <'a>{
                     if head.len()==0{
                         return false
                     }
-                    println!("head {} ->len({}) body {:?} ->({})",head,head.len(),body,body.len());
+                    // println!("head {} ->len({}) body {:?} ->({})",head,head.len(),body,body.len());
                     let b_request= HttpRequest::parse(&head);
                     if let Ok(request) =b_request{
-                        let route=self.get_path(&request.path);
-                        if route.0{
-                            if self.check(&request){
-                                let mut response=Response::new();
-                                let path= match request.path.strip_prefix(&self.config.alias ) {
-                                    Some(content) => content.to_owned(),
-                                    None => "".to_owned(),
-                                };
-                                if let Some(res)=response.response_200(route.1,path){
-                                    self.write_event(&res);
-                                    return true
-                                }
-                            }else {
-                                let mut response=Response::new();
-                                let res=response.response_error(405,self.config);
-                                self.write_event(&res);
-                                return true;
+                        let mut  max_redirect:u32=10;
+                        if let Some(value)  =  self.get_response(request,&mut max_redirect) {
+                            if max_redirect<1{
+                                self.eror_ppage(310);
                             }
-                        }else{
-                            let mut response=Response::new();
-                            let res=response.response_error(404,self.config);
-                            self.write_event(&res);
-                            return true;
+                            return value;
                         }
                     }
-                    let mut response=Response::new();
-                    let res=response.response_error(400,self.config);
-                    self.write_event(&res);
-                    return true;
+                    return self.eror_ppage(400);
                 },
                 Err(err) => {
                     println!("Error read request-> {:?}", err);
@@ -72,6 +52,44 @@ impl <'a> ConnectionHandler <'a>{
        return true
     }
 
+    fn eror_ppage(&mut self,status:u16) ->bool{
+        let mut response=Response::new();
+        let res=response.response_error(status,self.config);
+        self.write_event(&res);
+        return true
+    }
+    
+    fn get_response(&mut self, mut request: HttpRequest, max_redirect:&mut u32) -> Option<bool> {
+        let route=self.get_path(&request.path);
+        if *max_redirect<1{
+            return Some(true)
+        }
+        *max_redirect-=1;
+        if route.0{
+            if route.1.redirections.is_some() {
+                request.path=route.1.redirections.unwrap();
+                self.get_response(request,max_redirect);
+                return Some(true);
+            }
+            if self.check(&request){
+                let mut response=Response::new();
+                let path= match request.path.strip_prefix(&self.config.alias ) {
+                    Some(content) => content.to_owned(),
+                    None => "".to_owned(),
+                };
+                if let Some(res)=response.response_200(route.1,path){
+                    self.write_event(&res);
+                    return Some(true)
+                }
+            }else {
+                return Some(self.eror_ppage(405));
+            }
+        }else{
+            return  Some(self.eror_ppage(404));
+        }
+        None
+    }
+    
     pub fn read_event(&mut self) -> Result<(String, Vec<u8>), Error> {
         let mut buf_reader = BufReader::new(&mut self.stream);
         let mut head = String::new();
@@ -95,7 +113,6 @@ impl <'a> ConnectionHandler <'a>{
                 Err(err) => return Err(err),
             }
         }
-
         if let Some(length) = content_length {
             let mut buffer = vec![0; length];
             buf_reader.read_exact(&mut buffer)?;
@@ -104,6 +121,7 @@ impl <'a> ConnectionHandler <'a>{
 
         Ok((head, body))
     }
+
 
     pub fn write_event(&mut self,data : &str) {
         match self.stream.write_all(data.as_bytes()) {
@@ -118,7 +136,6 @@ impl <'a> ConnectionHandler <'a>{
     pub fn get_path(&self, path: &String )->(bool,RouteConfig){
         if path.starts_with(&self.config.alias) || &self.config.alias==path{
             if let  Some(config)=&self.config.routes {
-               
                 match config.get(path) {
                     Some(route) =>{
                     return  (true, route.clone())
@@ -132,13 +149,15 @@ impl <'a> ConnectionHandler <'a>{
 
     pub fn check(&mut self,request: &HttpRequest )->bool{
         let get_path=self.get_path(&request.path.clone());
+
         if get_path.0 {
+
            return get_path.1.accepted_methods.contains(&request.method)
         }
         return false
     }
 
     pub fn check_body_size(self,config: Config,body_size: usize)->bool{
-        config.client_body_size_limit==body_size
+        config.client_body_size_limit == body_size
     }
 }

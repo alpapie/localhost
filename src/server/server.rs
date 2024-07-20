@@ -129,7 +129,6 @@ impl <'a> Server <'a>  {
                             let listener = &mut self.listeners[token.0];
                             match listener.accept() {
                                 Ok((stream, _)) => {
-                                    // println!("nouvel connection {_addr:?}");
                                     self.handle_new_connection(stream);
                                 }
                                 Err(e) => {
@@ -139,8 +138,6 @@ impl <'a> Server <'a>  {
                             }
                         }
                         if let Some(handler) = self.connection_handlers.get_mut(&token) {
-                            // println!("connection existant {handler:?}");
-                            // handler.handle_event(event);
                             if !handler.handle_event(event){
                                self.poll.registry()
                                 .deregister(&mut handler.stream)

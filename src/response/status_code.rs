@@ -7,31 +7,34 @@ pub enum HttpStatus {
     MethodNotAllowed,
     PayloadTooLarge,
     InternalServerError,
+    TooManyRediection,
     // Add other status codes as needed
 }
-
+use HttpStatus::*;
 impl HttpStatus {
     pub fn code(&self) -> u16 {
         match self {
-            HttpStatus::Ok => 200,
-            HttpStatus::BadRequest => 400,
-            HttpStatus::Forbidden => 403,
-            HttpStatus::NotFound => 404,
-            HttpStatus::MethodNotAllowed => 405,
-            HttpStatus::PayloadTooLarge => 413,
-            HttpStatus::InternalServerError => 500,
+            Ok => 200,
+            BadRequest => 400,
+            Forbidden => 403,
+            NotFound => 404,
+            MethodNotAllowed => 405,
+            PayloadTooLarge => 413,
+            InternalServerError => 500,
+            TooManyRediection=>310
         }
     }
 
     pub fn reason_phrase(&self) -> &'static str {
         match self {
-            HttpStatus::Ok => "OK",
-            HttpStatus::BadRequest => "Bad Request",
-            HttpStatus::Forbidden => "Forbidden",
-            HttpStatus::NotFound => "Not Found",
-            HttpStatus::MethodNotAllowed => "Method Not Allowed",
-            HttpStatus::PayloadTooLarge => "Payload Too Large",
-            HttpStatus::InternalServerError => "Internal Server Error",
+            Ok => "OK",
+            BadRequest => "Bad Request",
+            Forbidden => "Forbidden",
+            NotFound => "Not Found",
+            MethodNotAllowed => "Method Not Allowed",
+            PayloadTooLarge => "Payload Too Large",
+            InternalServerError => "Internal Server Error",
+            TooManyRediection=>"Too Many Redirects"
         }
     }
 
@@ -41,14 +44,15 @@ impl HttpStatus {
 
     pub fn from_code(code: u16) ->HttpStatus {
         match code {
-            200 => HttpStatus::Ok,
-            400 => HttpStatus::BadRequest,
-            403 => HttpStatus::Forbidden,
-            404 => HttpStatus::NotFound,
-            405 => HttpStatus::MethodNotAllowed,
-            413 => HttpStatus::PayloadTooLarge,
-            500 => HttpStatus::InternalServerError,
-            _=>HttpStatus::NotFound
+            200 => Ok,
+            400 => BadRequest,
+            403 => Forbidden,
+            404 => NotFound,
+            405 => MethodNotAllowed,
+            413 => PayloadTooLarge,
+            500 => InternalServerError,
+            310 => TooManyRediection,
+            _=>NotFound
         }
     }
 }

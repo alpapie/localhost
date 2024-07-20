@@ -26,7 +26,7 @@ pub struct ErrorPages {
 #[derive(Deserialize, Debug,Default,Clone)]
 pub struct RouteConfig {
     pub accepted_methods: Vec<String>,
-    pub redirections: Option<HashMap<String, String>>,
+    pub redirections: Option< String>,
     pub root_directory: String,
     pub default_file: Option<String>,
     pub cgi: Option<String>,
