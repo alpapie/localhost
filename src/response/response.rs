@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::Path;
 
-use std::{collections::HashMap};
 
 use localhost::is_directory;
 
