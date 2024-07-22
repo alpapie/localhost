@@ -74,7 +74,7 @@ impl Response {
            };
            if let Some(path)= path_page{
             if let Some(content) = self.parse_page(&path){
-                self.header.push(format!("{} {}","Content-Length:".to_owned(), content.len().to_string()));
+                self.header.push(format!("{} {}","Content-Length:".to_owned(), (content.len()+1).to_string()));
                 self.header.push(format!("{} {}","\r\n".to_owned(), content));
                 return self.format_header() ;
             }

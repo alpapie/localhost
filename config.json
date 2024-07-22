@@ -6,12 +6,12 @@
         8081
     ],
     "error_pages": {
-        "400": "/views/errors/400.html",
-        "403": "/views/errors/500.html",
-        "404": "/views/errors/404.html",
-        "405": "/views/errors/405.html",
-        "413": "/views/errors/413.html",
-        "500": "/views/errors/500.html"
+        "error_400": "/views/errorpage/400.html",
+        "error_403": "/views/errors/500.html",
+        "error_404": "/home/alpapie/Desktop/zone01/rust/localhost/test/errorpage/404.html",
+        "error_405": "/views/errors/405.html",
+        "error_413": "/views/errors/413.html",
+        "error_500": "/views/errors/500.html"
     },
     "client_body_size_limit": 10485760,
     "alias":"/test",
@@ -37,6 +37,15 @@
             "redirections": "/test/test.html",
             "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test/html",
             "directory_listing": false,
+            "default_file_if_directory": "index.html"
+        },
+        "/test/localhost": {
+            "accepted_methods": [
+                "GET",
+                "POST"
+            ],
+            "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/log",
+            "directory_listing": true,
             "default_file_if_directory": "index.html"
         }
     }
