@@ -1,124 +1,155 @@
 use std::fs;
 use std::path::Path;
 
-
 use localhost::is_directory;
 
+use crate::cgi::CGIHandler;
 use crate::config::config::RouteConfig;
 use crate::config::Config;
 
 use super::HttpStatus;
 
-
-#[derive(Debug,Default,Clone)]
-pub struct Response{
+#[derive(Debug, Default, Clone)]
+pub struct Response {
     pub status: u32,
-    pub header:  Vec<String>,
+    pub header: Vec<String>,
     pub content: String,
 }
 
 impl Response {
-    pub fn new()->Self{
-        let mut header= Vec::new();
+    pub fn new() -> Self {
+        let header = vec!["Content-Type: text/html".to_owned(),"Content-Type: text/html".to_owned()];
 
-        header.push("HTTP/1.1 200 OK".to_owned());
-        header.push("Content-Type: text/html".to_owned());
-        return Self { status: 200,
-            header, 
-            content: "".to_owned() 
+        Self {
+            status: 200,
+            header,
+            content: "".to_owned(),
         }
     }
 
-    pub fn response_200(&mut self,route: RouteConfig,path: String)->Option<String>{
+    pub fn response_200(&mut self, route: RouteConfig, path: String) -> Option<String> {
         if route.directory_listing {
-          match self.list_directory(format!("{}{}",route.root_directory,path)) {
-            Some(content) => {
-                self.header.push(format!("{} {}","Content-Length:", content.len().to_string()));
-                self.header.push(format!("{} {}","\r\n".to_owned(), content.to_string()));
-
-            },
-            None => return None,
-            }  
-        }else if !route.directory_listing {
-            if route.cgi.is_some(){
-                // cgi traitement -> birame
-                
-            }
-            match self.parse_page(&(route.root_directory+&path)) {
+            match self.list_directory(format!("{}{}", route.root_directory, path)) {
                 Some(content) => {
-                    self.header.push(format!("{} {}","Content-Length:", content.len().to_string()));
-                    self.header.push(format!("{} {}","\r\n".to_owned(), content.to_string()));
-                },
-                None =>return None,
+                    self.header.push(format!(
+                        "{} {}",
+                        "Content-Length:",
+                        content.len() +1
+                    ));
+                    self.header
+                        .push(format!("{} {}", "\r\n".to_owned(), content));
+                }
+                None => return None,
+            }
+        } else if !route.directory_listing {
+            if route.cgi.is_some() {
+                let p = format!("{}{}", route.root_directory, path);
+                println!("P {}", p);
+                let cgi_handler = CGIHandler::new(p);
+                if let Some(res) = cgi_handler.handle_request() {
+                    self.header
+                        .push(format!("{} {}", "Content-Length:", res.len()+1));
+                    self.header.push(format!("{} {}", "\r\n".to_owned(), res));
+                } else {
+                    return None;
+                }
+            } else {
+                match self.parse_page(&(route.root_directory + &path)) {
+                    Some(content) => {
+                        self.header
+                            .push(format!("{} {}", "Content-Length:", content.len() +1));
+                        self.header
+                            .push(format!("{} {}", "\r\n".to_owned(), content));
+                    }
+                    None => return None,
+                }
             }
         }
-        
+
         Some(self.format_header())
     }
 
     fn format_header(&mut self) -> String {
         self.header.join("\r\n")
     }
-    
-    pub fn response_error(&mut self, status:u16, config: &Config)->String{
-        self.header[0]=format!("{} {}","HTTP/1.1".to_owned(), HttpStatus::from_code(status).to_string());
-        if let Some( page_error) =&config.error_pages{
-          let path_page= match status {
-               400=>&page_error.error_400,
-               403=>&page_error.error_403,
-               404=>&page_error.error_404,
-               405=>&page_error.error_405,
-               413=>&page_error.error_413,
-               _=>&page_error.error_500,
-           };
-           if let Some(path)= path_page{
-            if let Some(content) = self.parse_page(&path){
-                self.header.push(format!("{} {}","Content-Length:".to_owned(), (content.len()+1).to_string()));
-                self.header.push(format!("{} {}","\r\n".to_owned(), content));
-                return self.format_header() ;
+
+    pub fn response_error(&mut self, status: u16, config: &Config) -> String {
+        self.header[0] = format!(
+            "{} {}",
+            "HTTP/1.1".to_owned(),
+            HttpStatus::from_code(status)
+        );
+        if let Some(page_error) = &config.error_pages {
+            let path_page = match status {
+                400 => &page_error.error_400,
+                403 => &page_error.error_403,
+                404 => &page_error.error_404,
+                405 => &page_error.error_405,
+                413 => &page_error.error_413,
+                _ => &page_error.error_500,
+            };
+            if let Some(path) = path_page {
+                if let Some(content) = self.parse_page(path) {
+                    self.header.push(format!(
+                        "{} {}",
+                        "Content-Length:".to_owned(),
+                        (content.len() + 1)
+                    ));
+                    self.header
+                        .push(format!("{} {}", "\r\n".to_owned(), content));
+                    return self.format_header();
+                }
             }
-           }
         }
-        let cont=self.content_error(status);
-        self.header.push(format!("{} {}","Content-Length:".to_owned(), cont.len().to_string()));
-        self.header.push(format!("{} {}","\r\n".to_owned(),cont ));
+        let cont = self.content_error(status);
+        self.header.push(format!(
+            "{} {}",
+            "Content-Length:".to_owned(),
+            cont.len()+1
+        ));
+        self.header.push(format!("{} {}", "\r\n".to_owned(), cont));
         self.format_header()
     }
 
-    pub fn parse_page(&mut self,route: &str)->Option<String>{
-        match  fs::read_to_string(route){
+    pub fn parse_page(&mut self, route: &str) -> Option<String> {
+        match fs::read_to_string(route) {
             Ok(content) => Some(content),
             Err(_) => None,
-        } 
+        }
     }
-    
-    pub fn list_directory(&mut self, path_t: String) ->Option<String>{
+
+    pub fn list_directory(&mut self, path_t: String) -> Option<String> {
         let mut response = String::new();
-        let p=Path::new(&path_t);
-        if !is_directory(p){
+        let p = Path::new(&path_t);
+        if !is_directory(p) {
             return None;
         }
 
         let paths_p = fs::read_dir(&path_t);
         response.push_str("<html><body><h1>Directory Listing</h1><ul>");
-        if let Ok(paths)= paths_p{
+        if let Ok(paths) = paths_p {
             for path in paths {
                 // println!("Name: {}", path.unwrap().path().display());
-                match  path {
+                match path {
                     Ok(entry) => {
-                        if let Some(file_name_str) = entry.path().display().to_string().strip_prefix(&path_t){
-                            response.push_str(&format!("<li><a href=\"{}\">{}</a></li>", file_name_str, file_name_str));
-                        } ;
-                    },
+                        if let Some(file_name_str) =
+                            entry.path().display().to_string().strip_prefix(&path_t)
+                        {
+                            response.push_str(&format!(
+                                "<li><a href=\"{}\">{}</a></li>",
+                                file_name_str, file_name_str
+                            ));
+                        };
+                    }
                     Err(_) => return None,
                 }
             }
             response.push_str("</ul></body></html>\n");
-            return Some(response)
+            return Some(response);
         }
         None
     }
-    
+
     fn content_error(&self, code: u16) -> String {
         let styles = r#"
             <style>
@@ -161,7 +192,7 @@ impl Response {
             }
             </style>
         "#;
-    
+
         let html_start = r#"
             <!DOCTYPE html>
             <html lang="en">
@@ -170,7 +201,7 @@ impl Response {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Error Page</title>
         "#;
-    
+
         let html_end = r#"
             </head>
             <body>
@@ -178,7 +209,7 @@ impl Response {
                     <div class="fof">
                         <h1>Error
         "#;
-    
+
         let html_close = r#"
                         </h1>
                     </div>
@@ -186,15 +217,10 @@ impl Response {
             </body>
             </html>
         "#;
-    
+
         format!(
             "{}{}{} {}{}",
-            html_start,
-            styles,
-            html_end,
-            code,
-            html_close
+            html_start, styles, html_end, code, html_close
         )
     }
-    
 }

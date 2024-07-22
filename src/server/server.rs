@@ -1,11 +1,9 @@
 use std::process::exit;
 use std::time::{Duration, Instant};
-use std::{
-    collections::HashMap, net::ToSocketAddrs
-};
+use std::{collections::HashMap, net::ToSocketAddrs};
 
-use mio::{Events, Interest, Poll, Token};
 use mio::net::{TcpListener, TcpStream};
+use mio::{Events, Interest, Poll, Token};
 
 use crate::config::Config;
 use crate::error::LogError;
@@ -21,24 +19,23 @@ pub fn server_start() {
             if listeners.is_none() || listeners.as_ref().unwrap().is_empty() {
                 listeners = Some(vec![create_default_listener().unwrap()]);
             }
-            let mut litenerss= match listeners {
+            let mut litenerss = match listeners {
                 Some(list) => list,
                 None => {
                     println!("error server: code 500");
-                    LogError::new(format!("error: no listener created ")).log();
+                    LogError::new("error: no listener created ".to_string()).log();
                     exit(1);
-                },
+                }
             };
-            let server = Server::new(&mut litenerss,&config);
+            let server = Server::new(&mut litenerss, &config);
             server.handle_request()
         }
         Err(err) => {
-            println!("error: {err}");
+            println!("error config file: {err}");
             LogError::new(format!("error: {err}")).log();
         }
     }
 }
-
 
 fn create_listeners(ports: Vec<u16>) -> Option<Vec<TcpListener>> {
     let mut listeners = Vec::new();
@@ -47,22 +44,26 @@ fn create_listeners(ports: Vec<u16>) -> Option<Vec<TcpListener>> {
         let adress = match h_port.to_socket_addrs() {
             Ok(mut addr) => match addr.next() {
                 Some(socket_addr) => socket_addr,
-                None => return {
-                    LogError::new(format!("error lors de la conection")).log();
+                None => {
+                    return {
+                        LogError::new("error lors de la conection".to_string()).log();
+                        None
+                    }
+                }
+            },
+            Err(e) => {
+                return {
+                    LogError::new(format!("error lors de la conection {e}")).log();
                     None
-                },
-            },
-            Err(e) => return {
-                LogError::new(format!("error lors de la conection {e}")).log();
-                None
-            },
+                }
+            }
         };
 
         match TcpListener::bind(adress) {
             Ok(listener) => listeners.push(listener),
             Err(e) => {
                 LogError::new(format!("Error: {}. Unable to listen to: {}", e, h_port)).log();
-                return None
+                return None;
             }
         }
     }
@@ -76,35 +77,46 @@ fn create_default_listener() -> Result<TcpListener, String> {
             Some(socket_addr) => socket_addr,
             None => return Err(format!("No valid address found for {}", default_address)),
         },
-        Err(e) => return Err(format!("Error resolving address {}: {}", default_address, e)),
+        Err(e) => {
+            return Err(format!(
+                "Error resolving address {}: {}",
+                default_address, e
+            ))
+        }
     };
 
     match TcpListener::bind(addr) {
         Ok(listener) => Ok(listener),
-        Err(e) => Err(format!("Error binding to address {}: {}", default_address, e)),
+        Err(e) => Err(format!(
+            "Error binding to address {}: {}",
+            default_address, e
+        )),
     }
 }
 
- #[derive(Debug)]
+#[derive(Debug)]
 pub struct Server<'a> {
-   pub listeners: &'a mut Vec< TcpListener>,
-   pub poll: Poll,
-   pub connection_handlers: HashMap<Token, ConnectionHandler<'a>>,
-   pub next_token: usize,
-   pub config: &'a Config
+    pub listeners: &'a mut Vec<TcpListener>,
+    pub poll: Poll,
+    pub connection_handlers: HashMap<Token, ConnectionHandler<'a>>,
+    pub next_token: usize,
+    pub config: &'a Config,
 }
 
-impl <'a> Server <'a>  {
-    pub fn new(listeners: &'a mut Vec< TcpListener>, config: &'a Config) -> Self {
-
+impl<'a> Server<'a> {
+    pub fn new(listeners: &'a mut Vec<TcpListener>, config: &'a Config) -> Self {
         let poll = Poll::new().expect("Failed to create Poll instance");
-        let mut token_id=0;
-        
-          for (index, listener) in listeners.iter_mut().enumerate() {
-            token_id+=1;
+        let mut token_id = 0;
+
+        for (index, listener) in listeners.iter_mut().enumerate() {
+            token_id += 1;
             let token = Token(index);
-            if poll.registry().register(listener, token, Interest::READABLE).is_err(){
-                LogError::new(format!("Error: 500 register connection listener error")).log();
+            if poll
+                .registry()
+                .register(listener, token, Interest::READABLE)
+                .is_err()
+            {
+                LogError::new("Error: 500 register connection listener error".to_string()).log();
             };
         }
 
@@ -112,16 +124,19 @@ impl <'a> Server <'a>  {
             listeners,
             poll,
             connection_handlers: HashMap::new(),
-            next_token:token_id,
-            config
+            next_token: token_id,
+            config,
         }
     }
 
     pub fn handle_request(mut self) -> ! {
         let mut events = Events::with_capacity(4096);
-                
+
         loop {
-            match self.poll.poll(&mut events, Some(Duration::from_millis(5000))) {
+            match self
+                .poll
+                .poll(&mut events, Some(Duration::from_millis(5000)))
+            {
                 Ok(_) => {
                     for event in events.iter() {
                         let token = event.token();
@@ -133,40 +148,49 @@ impl <'a> Server <'a>  {
                                 }
                                 Err(e) => {
                                     println!("error: new connection error - {e}");
-                                    LogError::new(format!("Error accepting connection: {:?}", e)).log();
-                                },
+                                    LogError::new(format!("Error accepting connection: {:?}", e))
+                                        .log();
+                                }
                             }
                         }
                         if let Some(handler) = self.connection_handlers.get_mut(&token) {
-                            if !handler.handle_event(event){
-                               self.poll.registry()
-                                .deregister(&mut handler.stream)
-                                .expect("Failed to deregister stream");
+                            if !handler.handle_event(event) {
+                                self.poll
+                                    .registry()
+                                    .deregister(&mut handler.stream)
+                                    .expect("Failed to deregister stream");
                                 self.connection_handlers.remove(&token);
                             }
-                        } 
+                        }
                     }
                     self.handle_timeout()
-                },
+                }
                 Err(e) => {
                     println!("error: sever 500 - {e}");
                     LogError::new(format!("error: {e}")).log();
-                },
+                }
             };
         }
     }
-        
+
     pub fn handle_new_connection(&mut self, stream: TcpStream) {
         // set_linger_option(&stream, linger_duration).expect("Failed to set linger option");
-
+        println!("{:?}", stream.peer_addr());
         if let Err(e) = stream.set_ttl(60) {
             println!("error: timeout - {e}");
             LogError::new(format!("Error: {e}")).log();
         }
         self.next_token += 1;
         let token = Token(self.next_token);
-        let mut handler = ConnectionHandler::new(stream, token,self.config);
-        self.poll.registry().register(&mut handler.stream, token, Interest::READABLE | Interest::WRITABLE).unwrap();
+        let mut handler = ConnectionHandler::new(stream, token, self.config);
+        self.poll
+            .registry()
+            .register(
+                &mut handler.stream,
+                token,
+                Interest::READABLE | Interest::WRITABLE,
+            )
+            .unwrap();
         self.connection_handlers.insert(token, handler);
     }
 
@@ -188,7 +212,6 @@ impl <'a> Server <'a>  {
         });
     }
 }
-
 
 // use socket2::{SockRef, Socket};
 

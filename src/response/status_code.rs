@@ -10,7 +10,15 @@ pub enum HttpStatus {
     TooManyRediection,
     // Add other status codes as needed
 }
+use std::fmt;
+
 use HttpStatus::*;
+
+impl fmt::Display for HttpStatus {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {}", self.code(), self.reason_phrase())
+    }
+}
 impl HttpStatus {
     pub fn code(&self) -> u16 {
         match self {
@@ -21,7 +29,7 @@ impl HttpStatus {
             MethodNotAllowed => 405,
             PayloadTooLarge => 413,
             InternalServerError => 500,
-            TooManyRediection=>310
+            TooManyRediection => 310,
         }
     }
 
@@ -34,15 +42,11 @@ impl HttpStatus {
             MethodNotAllowed => "Method Not Allowed",
             PayloadTooLarge => "Payload Too Large",
             InternalServerError => "Internal Server Error",
-            TooManyRediection=>"Too Many Redirects"
+            TooManyRediection => "Too Many Redirects",
         }
     }
 
-    pub fn to_string(&self) -> String {
-        format!("{} {}", self.code(), self.reason_phrase())
-    }
-
-    pub fn from_code(code: u16) ->HttpStatus {
+    pub fn from_code(code: u16) -> HttpStatus {
         match code {
             200 => Ok,
             400 => BadRequest,
@@ -52,7 +56,7 @@ impl HttpStatus {
             413 => PayloadTooLarge,
             500 => InternalServerError,
             310 => TooManyRediection,
-            _=>NotFound
+            _ => NotFound,
         }
     }
 }

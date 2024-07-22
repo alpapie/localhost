@@ -1,16 +1,16 @@
-use std::collections::HashMap;
-use std::{str, fmt};
 use serde_json::Value;
-use std::io::BufRead;
+use std::collections::HashMap;
 use std::error::Error;
+use std::io::BufRead;
+use std::{fmt, str};
 
 #[derive(Debug)]
 pub struct HttpRequest {
-    pub method:     String,
-    pub path:       String,
-    pub version:    String,
-    pub headers:    HashMap<String, String>,
-    pub body:       Option<String>,
+    pub method: String,
+    pub path: String,
+    pub version: String,
+    pub headers: HashMap<String, String>,
+    pub body: Option<String>,
 }
 
 #[derive(Debug)]
@@ -35,10 +35,19 @@ impl HttpRequest {
         // Parse the request line
         let request_line = lines.next().ok_or(ParseError::InvalidRequestLine)?;
         let mut parts = request_line.split_whitespace();
-        
-        let method = parts.next().ok_or(ParseError::InvalidRequestLine)?.to_string();
-        let path = parts.next().ok_or(ParseError::InvalidRequestLine)?.to_string();
-        let version = parts.next().ok_or(ParseError::InvalidRequestLine)?.to_string();
+
+        let method = parts
+            .next()
+            .ok_or(ParseError::InvalidRequestLine)?
+            .to_string();
+        let path = parts
+            .next()
+            .ok_or(ParseError::InvalidRequestLine)?
+            .to_string();
+        let version = parts
+            .next()
+            .ok_or(ParseError::InvalidRequestLine)?
+            .to_string();
 
         // Parse the headers
         let mut headers = HashMap::new();
@@ -48,7 +57,11 @@ impl HttpRequest {
             }
             let mut header_parts = line.splitn(2, ':');
             let name = header_parts.next().unwrap().trim().to_string();
-            let value = header_parts.next().ok_or(ParseError::MissingHeaderValue)?.trim().to_string();
+            let value = header_parts
+                .next()
+                .ok_or(ParseError::MissingHeaderValue)?
+                .trim()
+                .to_string();
             headers.insert(name, value);
         }
 
@@ -67,12 +80,13 @@ impl HttpRequest {
 
     pub fn parse_headers(request_headers: &[u8]) -> Result<HashMap<String, String>, ParseError> {
         let mut headers = HashMap::new();
-        let request = str::from_utf8(request_headers).map_err(|_| ParseError::InvalidRequestLine)?;
+        let request =
+            str::from_utf8(request_headers).map_err(|_| ParseError::InvalidRequestLine)?;
 
         let mut lines = request.lines();
         let request_line = lines.next().ok_or(ParseError::InvalidRequestLine)?;
         let mut parts = request_line.split_whitespace();
-        
+
         // You may choose to store these values if needed
         // let _method = parts.next().ok_or(ParseError::InvalidRequestLine)?.to_string();
         // let _path = parts.next().ok_or(ParseError::InvalidRequestLine)?.to_string();
@@ -84,7 +98,11 @@ impl HttpRequest {
             }
             let mut key_value = line.splitn(2, ':');
             let key = key_value.next().unwrap().trim().to_string();
-            let value = key_value.next().ok_or(ParseError::MissingHeaderValue)?.trim().to_string();
+            let value = key_value
+                .next()
+                .ok_or(ParseError::MissingHeaderValue)?
+                .trim()
+                .to_string();
             headers.insert(key, value);
         }
 
@@ -106,7 +124,7 @@ impl HttpRequest {
             Err(ParseError::JsonValueError)
         }
     }
-                
+
     // Cette fonction traite les données post du body selon l'application x-www-form-urlencoded
     pub fn parse_body_form(&self, body: &[u8]) -> Result<HashMap<String, String>, ParseError> {
         let request_body = str::from_utf8(body).map_err(|_| ParseError::InvalidRequestLine)?;
@@ -132,22 +150,29 @@ impl HttpRequest {
 
     pub fn parse_body_chunked(stream: &mut dyn BufRead) -> Result<Vec<u8>, ParseError> {
         let mut body = Vec::new();
-        
+
         loop {
             let mut size_buf = String::new();
-            stream.read_line(&mut size_buf).map_err(|_| ParseError::ChunkError)?;
-            let size = usize::from_str_radix(size_buf.trim(), 16).map_err(|_| ParseError::ChunkError)?;
+            stream
+                .read_line(&mut size_buf)
+                .map_err(|_| ParseError::ChunkError)?;
+            let size =
+                usize::from_str_radix(size_buf.trim(), 16).map_err(|_| ParseError::ChunkError)?;
 
             if size == 0 {
                 break;
             }
 
             let mut data_chunk = vec![0; size];
-            stream.read_exact(&mut data_chunk).map_err(|_| ParseError::ChunkError)?;
+            stream
+                .read_exact(&mut data_chunk)
+                .map_err(|_| ParseError::ChunkError)?;
             body.extend_from_slice(&data_chunk);
 
             let mut crlf = vec![0; 2];
-            stream.read_exact(&mut crlf).map_err(|_| ParseError::ChunkError)?;
+            stream
+                .read_exact(&mut crlf)
+                .map_err(|_| ParseError::ChunkError)?;
 
             // Check if CRLF is correct
             if &crlf != b"\r\n" {
@@ -156,6 +181,4 @@ impl HttpRequest {
         }
         Ok(body)
     }
-
-    
 }

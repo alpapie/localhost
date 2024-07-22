@@ -1,22 +1,20 @@
-use std::error::Error;
 use chrono::prelude::*;
+use std::error::Error;
 
 #[derive()]
-pub struct LogError{
-    pub date:NaiveDateTime,
-    pub content : String
+pub struct LogError {
+    pub date: NaiveDateTime,
+    pub content: String,
 }
 
-
-
 impl LogError {
-   pub fn new(err: String) -> Self {
+    pub fn new(err: String) -> Self {
         let date: NaiveDateTime = Utc::now().naive_utc();
         let content = err.to_string();
         LogError { date, content }
     }
 
-   pub fn log(&self) {
+    pub fn log(&self) {
         let mut file = std::fs::OpenOptions::new()
             .create(true)
             .append(true)

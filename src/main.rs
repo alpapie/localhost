@@ -2,14 +2,13 @@ use std::fs;
 
 use server::server_start;
 
-mod config;
-mod request;
-mod server;
-mod error;
-mod response;
 mod cgi;
+mod config;
+mod error;
+mod request;
+mod response;
+mod server;
 
-
-fn main()  {
+fn main() {
     server_start()
 }

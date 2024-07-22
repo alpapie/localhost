@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 page="""
 <!DOCTYPE html>
 <html>
