@@ -2,6 +2,12 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 
+
+
+#[derive(Deserialize, Debug)]
+pub struct HostConfig {
+    pub servers: Vec<Config>,
+}
 #[derive(Deserialize, Debug, Default)]
 pub struct Config {
     pub server_name: String,
@@ -37,9 +43,9 @@ pub struct RouteConfig {
 }
 
 impl Config {
-    pub fn load_from_file(path: &str) -> Result<Config, Box<dyn std::error::Error>> {
+    pub fn load_from_file(path: &str) -> Result<HostConfig, Box<dyn std::error::Error>> {
         let content = fs::read_to_string(path)?;
-        let config: Config = serde_json::from_str(&content)?;
+        let config: HostConfig = serde_json::from_str(&content)?;
         Ok(config)
     }
 }

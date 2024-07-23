@@ -12,7 +12,7 @@ use crate::response::response::Response;
 #[derive(Debug)]
 pub struct ConnectionHandler<'a> {
     pub stream: TcpStream,
-    pub token: Token,
+    token: Token,
     pub last_activity: Instant,
     pub config: &'a Config,
 }
@@ -31,13 +31,13 @@ impl<'a> ConnectionHandler<'a> {
         if event.is_readable() {
             match self.read_event() {
                 Ok((head, body)) => {
-                    if head.len() == 0 {
+                    if head.is_empty() {
                         return false;
                     }
-                    // println!("head {} ->len({}) body {:?} ->({})",head,head.len(),body,body.len());
                     let b_request = HttpRequest::parse(&head);
                     if let Ok(request) = b_request {
                         let mut max_redirect: u32 = 10;
+                        // println!("head {} ->len({}) body {:?} ->({})",head,head.len(),body,body.len());
                         if let Some(value) = self.get_response(request, &mut max_redirect) {
                             if max_redirect < 1 {
                                 self.eror_ppage(310);
@@ -66,11 +66,13 @@ impl<'a> ConnectionHandler<'a> {
 
     fn get_response(&mut self, mut request: HttpRequest, max_redirect: &mut u32) -> Option<bool> {
         let route = self.get_path(&request.path);
+
         if *max_redirect < 1 {
             return Some(true);
         }
         *max_redirect -= 1;
         if route.0 {
+
             if route.1.redirections.is_some() {
                 request.path = route.1.redirections.unwrap();
                 self.get_response(request, max_redirect);

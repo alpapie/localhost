@@ -18,7 +18,7 @@ pub struct Response {
 
 impl Response {
     pub fn new() -> Self {
-        let header = vec!["Content-Type: text/html".to_owned(),"Content-Type: text/html".to_owned()];
+        let header = vec!["HTTP/1.1 200 OK".to_owned(),"Content-Type: text/html".to_owned()];
 
         Self {
             status: 200,
@@ -29,7 +29,29 @@ impl Response {
 
     pub fn response_200(&mut self, route: RouteConfig, path: String) -> Option<String> {
         if route.directory_listing {
-            match self.list_directory(format!("{}{}", route.root_directory, path)) {
+            if let Some(default)  =route.default_file  {
+                let p = format!("{}{}/{}", &route.root_directory, path,default);
+                if route.cgi.is_some() {
+                    let cgi_handler = CGIHandler::new(p);
+                    if let Some(res) = cgi_handler.handle_request() {
+                        self.header.push(format!("{} {}", "Content-Length:", res.len()+1));
+                        self.header.push(format!("{} {}", "\r\n".to_owned(), res));
+                    } else {
+                        return None;
+                    }
+                } else {
+                    match self.parse_page(&p) {
+                        Some(content) => {
+                            self.header
+                                .push(format!("{} {}", "Content-Length:", content.len() +1));
+                            self.header
+                                .push(format!("{} {}", "\r\n".to_owned(), content));
+                        }
+                        None => return None,
+                    }
+                }
+            }
+            match self.list_directory(format!("{}{}", &route.root_directory, path)) {
                 Some(content) => {
                     self.header.push(format!(
                         "{} {}",
@@ -44,11 +66,9 @@ impl Response {
         } else if !route.directory_listing {
             if route.cgi.is_some() {
                 let p = format!("{}{}", route.root_directory, path);
-                println!("P {}", p);
                 let cgi_handler = CGIHandler::new(p);
                 if let Some(res) = cgi_handler.handle_request() {
-                    self.header
-                        .push(format!("{} {}", "Content-Length:", res.len()+1));
+                    self.header.push(format!("{} {}", "Content-Length:", res.len()+1));
                     self.header.push(format!("{} {}", "\r\n".to_owned(), res));
                 } else {
                     return None;
