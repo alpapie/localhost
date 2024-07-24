@@ -17,9 +17,9 @@
       "routes": {
         "/alpapie": {
           "accepted_methods": ["GET", "POST"],
-          "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test",
-          "default_file": "index.html",
-          "cgi": "python",
+          "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test/php",
+          "default_file": "index.php",
+          "cgi": "php",
           "directory_listing": true,
           "default_file_if_directory": "index.html"
         },
@@ -55,10 +55,14 @@
         },
         "/alpapie/test2.html": {
           "accepted_methods": ["GET", "POST"],
-          "redirections": "/test/test.html",
           "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test/html",
           "directory_listing": false,
           "default_file_if_directory": "index.html"
+        }
+        , "/alpapie/test.png": {
+          "accepted_methods": ["GET", "POST"],
+          "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test/image",
+          "directory_listing": false
         }
       }
     }

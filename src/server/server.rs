@@ -26,7 +26,7 @@ pub fn server_start() {
                 Some(list) => list,
                 None => {
                     println!("error server: code 500");
-                    LogError::new(format!("error: no listener created ")).log();
+                    LogError::new("error: no listener created ".to_string()).log();
                     exit(1);
                 },
             };

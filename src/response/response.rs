@@ -6,6 +6,7 @@ use localhost::is_directory;
 use crate::cgi::CGIHandler;
 use crate::config::config::RouteConfig;
 use crate::config::Config;
+use crate::error::LogError;
 
 use super::HttpStatus;
 
@@ -29,65 +30,69 @@ impl Response {
 
     pub fn response_200(&mut self, route: RouteConfig, path: String) -> Option<String> {
         if route.directory_listing {
-            if let Some(default)  =route.default_file  {
-                let p = format!("{}{}/{}", &route.root_directory, path,default);
-                if route.cgi.is_some() {
-                    let cgi_handler = CGIHandler::new(p);
-                    if let Some(res) = cgi_handler.handle_request() {
-                        self.header.push(format!("{} {}", "Content-Length:", res.len()+1));
-                        self.header.push(format!("{} {}", "\r\n".to_owned(), res));
-                    } else {
-                        return None;
-                    }
-                } else {
-                    match self.parse_page(&p) {
-                        Some(content) => {
-                            self.header
-                                .push(format!("{} {}", "Content-Length:", content.len() +1));
-                            self.header
-                                .push(format!("{} {}", "\r\n".to_owned(), content));
-                        }
-                        None => return None,
-                    }
-                }
-            }
-            match self.list_directory(format!("{}{}", &route.root_directory, path)) {
-                Some(content) => {
-                    self.header.push(format!(
-                        "{} {}",
-                        "Content-Length:",
-                        content.len() +1
-                    ));
-                    self.header
-                        .push(format!("{} {}", "\r\n".to_owned(), content));
-                }
-                None => return None,
-            }
-        } else if !route.directory_listing {
-            if route.cgi.is_some() {
-                let p = format!("{}{}", route.root_directory, path);
-                let cgi_handler = CGIHandler::new(p);
-                if let Some(res) = cgi_handler.handle_request() {
-                    self.header.push(format!("{} {}", "Content-Length:", res.len()+1));
-                    self.header.push(format!("{} {}", "\r\n".to_owned(), res));
-                } else {
-                    return None;
-                }
-            } else {
-                match self.parse_page(&(route.root_directory + &path)) {
-                    Some(content) => {
-                        self.header
-                            .push(format!("{} {}", "Content-Length:", content.len() +1));
-                        self.header
-                            .push(format!("{} {}", "\r\n".to_owned(), content));
-                    }
-                    None => return None,
-                }
+            self.handle_directory_listing(&route, &path)
+        } else {
+            self.handle_regular_request(&route, &path)
+        }
+    }
+
+    fn handle_directory_listing(&mut self, route: &RouteConfig, path: &str) -> Option<String> {
+        if let Some(default) = &route.default_file {
+            let p = format!("{}{}/{}", route.root_directory, path, default);
+            if let Some(content) = self.handle_cgi_or_page(route, &p) {
+                return Some(content);
             }
         }
 
-        Some(self.format_header())
+        if let Some(content) = self.list_directory(format!("{}{}", route.root_directory, path)) {
+            self.add_content_length_header(content.len());
+            self.header.push(format!("{} {}", "\r\n".to_owned(), content));
+            return Some(self.format_header())
+        }
+        None
+
     }
+
+    fn handle_regular_request(&mut self, route: &RouteConfig, path: &str) -> Option<String> {
+        let p = format!("{}{}", route.root_directory, path);
+        self.handle_cgi_or_page(route, &p)
+    }
+
+    fn handle_cgi_or_page(&mut self, route: &RouteConfig, path: &str) -> Option<String> {
+        if route.cgi.is_some() {
+            if let Some(res) = self.handle_cgi_request(path) {
+                self.add_content_length_header(res.len());
+                self.header.push(format!("{} {}", "\r\n".to_owned(), res));
+                return Some(self.format_header());
+            }
+        } else if let Some(content) = self.handle_page_request(path) {
+            self.add_content_length_header(content.len());
+            self.header.push(format!("{} {}", "\r\n".to_owned(), content));
+            return Some(self.format_header());
+        }
+        None
+    }
+
+    fn handle_cgi_request(&self, path: &str) -> Option<String> {
+        let cgi_handler = CGIHandler::new(path.to_string());
+        cgi_handler.handle_request()
+    }
+
+    fn handle_page_request(&mut self, path: &str) -> Option<String> {
+        self.parse_page(path)
+    }
+
+    fn add_content_length_header(&mut self, length: usize) {
+        self.header.push(format!("{} {}", "Content-Length:", length + 1));
+    }
+
+
+
+    // fn add_content_type_header(&mut self, typpe: String) {
+    //     if self.header.len()>=2 {
+    //         self.header[2]=format!("{} {}", "Content-Type: text/html", typpe);
+    //     }
+    // }
 
     fn format_header(&mut self) -> String {
         self.header.join("\r\n")
@@ -134,7 +139,10 @@ impl Response {
     pub fn parse_page(&mut self, route: &str) -> Option<String> {
         match fs::read_to_string(route) {
             Ok(content) => Some(content),
-            Err(_) => None,
+            Err(err) => {
+                LogError::new(format!("parse eror page-> {}",err)).log();
+                None
+            },
         }
     }
 

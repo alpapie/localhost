@@ -37,7 +37,10 @@ impl<'a> ConnectionHandler<'a> {
                     let b_request = HttpRequest::parse(&head);
                     if let Ok(request) = b_request {
                         let mut max_redirect: u32 = 10;
-                        // println!("head {} ->len({}) body {:?} ->({})",head,head.len(),body,body.len());
+                        println!("head {} ->len({}) body {:?} ->({})",head,head.len(),body,body.len());
+                        // if request.headers.get("cookie").is_none() || is_auth(request.headers.get("cookie").unwrap()){
+            
+                        // }
                         if let Some(value) = self.get_response(request, &mut max_redirect) {
                             if max_redirect < 1 {
                                 self.eror_ppage(310);
@@ -66,13 +69,12 @@ impl<'a> ConnectionHandler<'a> {
 
     fn get_response(&mut self, mut request: HttpRequest, max_redirect: &mut u32) -> Option<bool> {
         let route = self.get_path(&request.path);
-
+      
         if *max_redirect < 1 {
             return Some(true);
         }
         *max_redirect -= 1;
         if route.0 {
-
             if route.1.redirections.is_some() {
                 request.path = route.1.redirections.unwrap();
                 self.get_response(request, max_redirect);
@@ -97,35 +99,60 @@ impl<'a> ConnectionHandler<'a> {
         None
     }
 
-    pub fn read_event(&mut self) -> Result<(String, Vec<u8>), Error> {
-        let mut buf_reader = BufReader::new(&mut self.stream);
+    pub fn read_event(&mut self) -> Result<(String, Vec<u8>), u32> {
+        let mut buffer = [0; 1024];
         let mut head = String::new();
         let mut body = Vec::new();
-        let mut content_length: Option<usize> = None;
-
-        // Read headers
+    
+        // Get the head and first bytes of the body
         loop {
-            let mut line = String::new();
-            match buf_reader.read_line(&mut line) {
-                Ok(0) => break, // End of stream
-                Ok(_) => {
-                    if line == "\r\n" {
-                        break; // End of headers
+            let bytes_read =  self.stream.read(&mut buffer).map_err(|_| line!())?;
+    
+            if bytes_read == 0 {
+                return Ok((head, body));
+            }
+    
+            match String::from_utf8(buffer[..bytes_read].to_vec()) {
+                Ok(chunk) => {
+                    if let Some(index) = chunk.find("\r\n\r\n") {
+                        // Split head and body when finding the double CRLF (Carriage Return Line Feed)
+                        head.push_str(&chunk[..index]);
+                        body.extend(&buffer[index + 4..bytes_read]);
+                        break;
+                    } else {
+                        // If no double CRLF found, add the entire chunk to the head
+                        head.push_str(&chunk);
                     }
-                    if line.starts_with("Content-Length:") {
-                        content_length = line[15..].trim().parse().ok();
-                    }
-                    head.push_str(&line);
                 }
-                Err(err) => return Err(err),
+                Err(_) => {
+                    let rest;
+                    unsafe {
+                        rest = String::from_utf8_unchecked(buffer.to_vec());
+                    }
+                    let index = rest.find("\r\n\r\n").unwrap_or(0);
+                    head.push_str(rest.split_at(index).0);
+                    if index == 0 {
+                        body.extend(&buffer[index..bytes_read]);
+                    } else {
+                        body.extend(&buffer[index + 4..bytes_read]);
+                    }
+                    break;
+                }
+            }
+            // Clear the buffer
+        }
+    
+        loop {
+            let bytes_read = match self.stream.read(&mut buffer) {
+                Ok(b) => b,
+                Err(_) => return Ok((head, body)),
+            };
+            body.extend(buffer);
+            if bytes_read < 1024 {
+                break;
             }
         }
-        if let Some(length) = content_length {
-            let mut buffer = vec![0; length];
-            buf_reader.read_exact(&mut buffer)?;
-            body = buffer;
-        }
-
+    
         Ok((head, body))
     }
 
