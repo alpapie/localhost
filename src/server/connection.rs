@@ -38,9 +38,9 @@ impl<'a> ConnectionHandler<'a> {
                         return false;
                     }
                     let b_request = HttpRequest::parse(&head,&body);
-                    println!("head {:?}  body len {:?} body {:?}",&head,body.len(),body);
-                    if let Ok(request) = b_request {
-                        let mut max_redirect: u32 = 10;
+                    match b_request {
+                        Ok(request) => {
+                            let mut max_redirect: u32 = 10;
                         // println!("head {:?} ->len({}) body {:?} ->({})",&request,head.len(),body,body.len());
                         if let Some(value) = self.get_response(request, &mut max_redirect,session) {
                             if max_redirect < 1 {
@@ -48,8 +48,13 @@ impl<'a> ConnectionHandler<'a> {
                             }
                             return value;
                         }
+                        },
+                        Err(err) => {
+                            println!("Error parse request-> {:?}", err);
+                            LogError::new(format!("Error parse request-> {:?}", err)).log();
+                            return self.eror_ppage(400);
+                        }
                     }
-                    return self.eror_ppage(400);
                 }
                 Err(err) => {
                     println!("Error read request-> {:?}", err);
