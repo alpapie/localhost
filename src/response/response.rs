@@ -15,16 +15,18 @@ pub struct Response {
     pub status: u32,
     pub header: Vec<String>,
     pub content: String,
+    pub session: String
 }
 
 impl Response {
-    pub fn new() -> Self {
+    pub fn new(session:String) -> Self {
         let header = vec!["HTTP/1.1 200 OK".to_owned(),"Content-Type: text/html".to_owned()];
 
         Self {
             status: 200,
             header,
             content: "".to_owned(),
+            session
         }
     }
 
@@ -83,6 +85,12 @@ impl Response {
     }
 
     fn add_content_length_header(&mut self, length: usize) {
+        if !self.session.is_empty(){
+            self.header.push(
+               format!( "Set-Cookie: session_id={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
+            self.session,  24 * 60 * 60)
+            );
+        }
         self.header.push(format!("{} {}", "Content-Length:", length + 1));
     }
 

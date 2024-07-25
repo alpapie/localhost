@@ -21,13 +21,19 @@
           "default_file": "index.php",
           "cgi": "php",
           "directory_listing": true,
-          "default_file_if_directory": "index.html"
+          "setcookie":true
         },
-        "/alpapie/test.html": {
+        "/alpapie/form.html": {
           "accepted_methods": ["GET", "POST"],
           "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test/html",
           "directory_listing": false,
           "default_file_if_directory": "index.html"
+        },
+        "/alpapie/secrete.html": {
+          "accepted_methods": ["GET", "POST"],
+          "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test/html",
+          "directory_listing": false,
+          "auth":false
         }
       }
     },

@@ -37,9 +37,9 @@ pub struct RouteConfig {
     pub default_file: Option<String>,
     pub cgi: Option<String>,
     pub directory_listing: bool,
-    pub default_file_if_directory: Option<String>,
     pub setcookie:Option<bool>,
     pub auth:Option<bool>
+
 }
 
 impl Config {

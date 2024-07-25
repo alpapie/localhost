@@ -8,6 +8,50 @@ pub fn is_directory(path: &Path) -> bool {
     }
 }
 
+// pub fn read_event(&mut self) -> Result<(String, Vec<u8>), Error> {
+//   // stream.set_nonblocking(true)?;
+//   let mut reader = BufReader::new(&self.stream);
+//   let mut request_line = String::new();
+
+//   let mut head = String::new();
+//   let mut body = Vec::new();
+//   // Attempt to read the request line
+//   loop {
+//       match reader.read_line(&mut request_line) {
+//           Ok(0) => {
+//               return Err(Error::new(
+//                   ErrorKind::WouldBlock,
+//                   "No data available",
+//               ))
+//           }
+//           Ok(_) => {
+//               if !request_line.trim().is_empty() {
+//                   break; // Successfully read the request line
+//               }
+//           }
+//           Err(e) if e.kind() == ErrorKind::WouldBlock => continue, // Keep trying if no data is available yet
+//           Err(e) => return Err(e),
+//       }
+//   }
+//   // Read headers
+//   let mut headers = Vec::new();
+//   let mut header_line = String::new();
+//   while reader.read_line(&mut header_line)? != 0 {
+//       if header_line.trim().is_empty() {
+//           break; // End of headers
+//       }
+//       headers.push(header_line.clone());
+//       header_line.clear();
+//   }
+//   head= headers.join("\n");
+
+//   // Read the body
+//   let content_length=self.extract_content_length(&head).unwrap_or(0);
+//   body.resize(content_length, 0);
+//   reader.read_exact(&mut body)?;
+
+//   Ok((head, body))
+// }
 
   // pub fn response_200(&mut self, route: RouteConfig, path: String) -> Option<String> {
     //     if route.directory_listing {

@@ -1,13 +1,16 @@
 use mio::net::TcpStream;
 use mio::Token;
-use std::io::{BufRead, BufReader, Error, Read, Write};
-use std::time::Instant;
+use core::time;
+use std::io::{BufRead, BufReader, Error, ErrorKind, Read, Write};
+use std::thread::{self, sleep};
+use std::time::{Duration, Instant};
 
 use crate::config::config::RouteConfig;
 use crate::config::Config;
 use crate::error::LogError;
 use crate::request::parse_header::HttpRequest;
 use crate::response::response::Response;
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct ConnectionHandler<'a> {
@@ -27,21 +30,19 @@ impl<'a> ConnectionHandler<'a> {
         }
     }
 
-    pub fn handle_event(&mut self, event: &mio::event::Event) -> bool {
+    pub fn handle_event(&mut self, event: &mio::event::Event,session: &mut Vec<String>) -> bool {
         if event.is_readable() {
             match self.read_event() {
                 Ok((head, body)) => {
                     if head.is_empty() {
                         return false;
                     }
-                    let b_request = HttpRequest::parse(&head);
+                    let b_request = HttpRequest::parse(&head,&body);
+                    println!("head {:?}  body len {:?} body {:?}",&head,body.len(),body);
                     if let Ok(request) = b_request {
                         let mut max_redirect: u32 = 10;
-                        println!("head {} ->len({}) body {:?} ->({})",head,head.len(),body,body.len());
-                        // if request.headers.get("cookie").is_none() || is_auth(request.headers.get("cookie").unwrap()){
-            
-                        // }
-                        if let Some(value) = self.get_response(request, &mut max_redirect) {
+                        // println!("head {:?} ->len({}) body {:?} ->({})",&request,head.len(),body,body.len());
+                        if let Some(value) = self.get_response(request, &mut max_redirect,session) {
                             if max_redirect < 1 {
                                 self.eror_ppage(310);
                             }
@@ -61,13 +62,13 @@ impl<'a> ConnectionHandler<'a> {
     }
 
     fn eror_ppage(&mut self, status: u16) -> bool {
-        let mut response = Response::new();
+        let mut response = Response::new("".to_string());
         let res = response.response_error(status, self.config);
         self.write_event(&res);
         true
     }
 
-    fn get_response(&mut self, mut request: HttpRequest, max_redirect: &mut u32) -> Option<bool> {
+    fn get_response(&mut self, mut request: HttpRequest, max_redirect: &mut u32,session: &mut Vec<String>) -> Option<bool> {
         let route = self.get_path(&request.path);
       
         if *max_redirect < 1 {
@@ -77,15 +78,28 @@ impl<'a> ConnectionHandler<'a> {
         if route.0 {
             if route.1.redirections.is_some() {
                 request.path = route.1.redirections.unwrap();
-                self.get_response(request, max_redirect);
+                self.get_response(request, max_redirect,session);
                 return Some(true);
             }
             if self.check(&request) {
-                let mut response = Response::new();
                 let path = match request.path.strip_prefix(&self.config.alias) {
                     Some(content) => content.to_owned(),
                     None => "".to_owned(),
                 };
+             
+                let cookie=request.get_cookie("session_id");
+                if route.1.auth.is_some() && !route.1.auth.unwrap() && (cookie.is_none() || !session.contains(&cookie.clone().unwrap()) ) {
+                    println!("cookie {:?}",cookie.clone());
+                    return Some(self.eror_ppage(403));
+                }
+
+                let mut sess_id=String::new();
+                if route.1.setcookie.is_some() && route.1.setcookie.unwrap(){
+                    sess_id= Uuid::new_v4().to_string();
+                    session.push(sess_id.clone());
+                }
+
+                let mut response = Response::new(sess_id);
                 if let Some(res) = response.response_200(route.1, path) {
                     self.write_event(&res);
                     return Some(true);
@@ -103,56 +117,87 @@ impl<'a> ConnectionHandler<'a> {
         let mut buffer = [0; 1024];
         let mut head = String::new();
         let mut body = Vec::new();
-    
+        let mut content_length = 0;
+
         // Get the head and first bytes of the body
         loop {
-            let bytes_read =  self.stream.read(&mut buffer).map_err(|_| line!())?;
-    
-            if bytes_read == 0 {
-                return Ok((head, body));
+            match self.stream.read(&mut buffer) {
+                Ok(bytes_read) => {
+                    if bytes_read == 0 {
+                        return Ok((head, body));
+                    }
+
+                    match String::from_utf8(buffer[..bytes_read].to_vec()) {
+                        Ok(chunk) => {
+                            if let Some(index) = chunk.find("\r\n\r\n") {
+                                // Split head and body when finding the double CRLF (Carriage Return Line Feed)
+                                head.push_str(&chunk[..index]);
+                                body.extend(&buffer[index + 4..bytes_read]);
+
+                                // Extract Content-Length
+                                if let Some(cl_index) = head.to_lowercase().find("content-length:") {
+                                    let cl_str = &head[cl_index + 15..];
+                                    if let Some(cl_end) = cl_str.find("\r\n") {
+                                        content_length = cl_str[..cl_end].trim().parse().unwrap_or(0);
+                                    }
+                                }
+                                break;
+                            } else {
+                                // If no double CRLF found, add the entire chunk to the head
+                                head.push_str(&chunk);
+                            }
+                        }
+                        Err(_) => {
+                            let rest;
+                            unsafe {
+                                rest = String::from_utf8_unchecked(buffer.to_vec());
+                            }
+                            let index = rest.find("\r\n\r\n").unwrap_or(0);
+                            head.push_str(rest.split_at(index).0);
+                            if index == 0 {
+                                body.extend(&buffer[index..bytes_read]);
+                            } else {
+                                body.extend(&buffer[index + 4..bytes_read]);
+
+                                // Extract Content-Length
+                                if let Some(cl_index) = head.to_lowercase().find("content-length:") {
+                                    let cl_str = &head[cl_index + 15..];
+                                    if let Some(cl_end) = cl_str.find("\r\n") {
+                                        content_length = cl_str[..cl_end].trim().parse().unwrap_or(0);
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+                Err(e) if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::Interrupted => {
+                    // Resource temporarily unavailable, so retry after a short delay
+                    std::thread::sleep(Duration::from_millis(50));
+                    continue;
+                }
+                Err(_) => return Err(line!()),
             }
-    
-            match String::from_utf8(buffer[..bytes_read].to_vec()) {
-                Ok(chunk) => {
-                    if let Some(index) = chunk.find("\r\n\r\n") {
-                        // Split head and body when finding the double CRLF (Carriage Return Line Feed)
-                        head.push_str(&chunk[..index]);
-                        body.extend(&buffer[index + 4..bytes_read]);
+        }
+
+        // Read the rest of the body
+        while body.len() < content_length {
+            match self.stream.read(&mut buffer) {
+                Ok(bytes_read) => {
+                    if bytes_read == 0 {
                         break;
-                    } else {
-                        // If no double CRLF found, add the entire chunk to the head
-                        head.push_str(&chunk);
                     }
+                    body.extend_from_slice(&buffer[..bytes_read]);
                 }
-                Err(_) => {
-                    let rest;
-                    unsafe {
-                        rest = String::from_utf8_unchecked(buffer.to_vec());
-                    }
-                    let index = rest.find("\r\n\r\n").unwrap_or(0);
-                    head.push_str(rest.split_at(index).0);
-                    if index == 0 {
-                        body.extend(&buffer[index..bytes_read]);
-                    } else {
-                        body.extend(&buffer[index + 4..bytes_read]);
-                    }
-                    break;
+                Err(e) if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::Interrupted => {
+                    // Resource temporarily unavailable, so retry after a short delay
+                    std::thread::sleep(Duration::from_millis(50));
+                    continue;
                 }
-            }
-            // Clear the buffer
-        }
-    
-        loop {
-            let bytes_read = match self.stream.read(&mut buffer) {
-                Ok(b) => b,
                 Err(_) => return Ok((head, body)),
-            };
-            body.extend(buffer);
-            if bytes_read < 1024 {
-                break;
             }
         }
-    
+
         Ok((head, body))
     }
 

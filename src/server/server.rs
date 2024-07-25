@@ -51,8 +51,7 @@ pub fn server_start() {
                                 }
                             }
                             if let Some(handler) = server.connection_handlers.get_mut(&token) {
-                                // println!("connection existant {handler:?}");
-                                if !handler.handle_event(event){
+                                if !handler.handle_event(event,&mut server.sessions){
                                    server.poll.registry()
                                     .deregister(&mut handler.stream)
                                     .expect("Failed to deregister stream");
@@ -140,6 +139,7 @@ pub struct Server<'a> {
    pub poll: Poll,
    pub connection_handlers: HashMap<Token, ConnectionHandler<'a>>,
    pub next_token: usize,
+   pub sessions:Vec<String>
 }
 
 impl <'a> Server <'a>  {
@@ -160,8 +160,8 @@ impl <'a> Server <'a>  {
             listeners,
             poll,
             connection_handlers: HashMap::new(),
-            next_token:token_id
-
+            next_token:token_id,
+            sessions: Vec::new()
         }
     }
 
@@ -181,7 +181,7 @@ impl <'a> Server <'a>  {
 
     fn handle_timeout(&mut self) {
         let now = Instant::now();
-        let timeout_duration = Duration::from_millis(1000);
+        let timeout_duration = Duration::from_millis(3000);
 
         // Remove connections that timed out from `connections` HashMap
         self.connection_handlers.retain(|_, conn| {
