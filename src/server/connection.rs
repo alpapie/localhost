@@ -11,6 +11,7 @@ use crate::error::LogError;
 use crate::request::parse_header::HttpRequest;
 use crate::response::response::Response;
 use uuid::Uuid;
+use crate::request::parse_header::ParseError::*;
 
 #[derive(Debug)]
 pub struct ConnectionHandler<'a> {
@@ -37,7 +38,7 @@ impl<'a> ConnectionHandler<'a> {
                     if head.is_empty() {
                         return false;
                     }
-                    let b_request = HttpRequest::parse(&head,&body);
+                    let b_request = HttpRequest::parse(&head,&body,self.config);
                     match b_request {
                         Ok(request) => {
                             let mut max_redirect: u32 = 10;
@@ -49,10 +50,13 @@ impl<'a> ConnectionHandler<'a> {
                             return value;
                         }
                         },
-                        Err(err) => {
-                            println!("Error parse request-> {:?}", err);
-                            LogError::new(format!("Error parse request-> {:?}", err)).log();
-                            return self.eror_ppage(400);
+                        Err(request_error) => {
+                            println!("Error parse request-> {:?}", request_error);
+                            LogError::new(format!("Error parse request-> {:?}", request_error)).log();
+                            return  match request_error  {
+                               Tolong=>self.eror_ppage(413),
+                                _=> self.eror_ppage(500)
+                            };
                         }
                     }
                 }
@@ -235,9 +239,5 @@ impl<'a> ConnectionHandler<'a> {
             return get_path.1.accepted_methods.contains(&request.method);
         }
         false
-    }
-
-    pub fn check_body_size(self, config: Config, body_size: usize) -> bool {
-        config.client_body_size_limit == body_size
     }
 }

@@ -7,5 +7,6 @@ edition = "2021"
 mio = { version = "0.8.10", features = ["net", "os-poll"] }
 uuid = { version = "1.3", features = ["v4"] }
 serde = { version = "1.0.204", features = ["derive"] }
+serde_urlencoded = "0.7"
 serde_json = "1.0.120"
 chrono = "0.4.38"

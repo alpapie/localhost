@@ -17,6 +17,7 @@ pub struct Config {
     pub client_body_size_limit: usize,
     pub routes: Option<HashMap<String, RouteConfig>>,
     pub alias: String,
+    pub upload_folder: String
 }
 
 #[derive(Deserialize, Debug)]
