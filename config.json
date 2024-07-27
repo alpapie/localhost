@@ -35,6 +35,11 @@
           "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test/html",
           "directory_listing": false,
           "auth":false
+        },
+        "/alpapie/html": {
+          "accepted_methods": ["GET", "POST","PUT"],
+          "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/ccctest/html",
+          "directory_listing": true
         }
       }
     },

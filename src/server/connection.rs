@@ -113,6 +113,7 @@ impl<'a> ConnectionHandler<'a> {
                     self.write_event(&res);
                     return Some(true);
                 }
+                return Some(self.eror_ppage(500));
             } else {
                 return Some(self.eror_ppage(405));
             }

@@ -44,6 +44,7 @@ impl Response {
             if let Some(content) = self.handle_cgi_or_page(route, &p) {
                 return Some(content);
             }
+            return None
         }
 
         if let Some(content) = self.list_directory(format!("{}{}", route.root_directory, path)) {
@@ -52,7 +53,6 @@ impl Response {
             return Some(self.format_header())
         }
         None
-
     }
 
     fn handle_regular_request(&mut self, route: &RouteConfig, path: &str) -> Option<String> {
