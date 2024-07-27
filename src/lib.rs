@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::fs;
 use std::path::Path;
 
@@ -7,6 +8,7 @@ pub fn is_directory(path: &Path) -> bool {
         Err(_) => false,
     }
 }
+
 
 // pub fn read_event(&mut self) -> Result<(String, Vec<u8>), Error> {
 //   // stream.set_nonblocking(true)?;

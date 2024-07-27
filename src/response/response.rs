@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::fs;
 use std::path::Path;
 
@@ -30,7 +31,27 @@ impl Response {
         }
     }
 
-    pub fn response_200(&mut self, route: RouteConfig, path: String) -> Option<String> {
+    pub fn response_200(&mut self, route: RouteConfig, path: String,method:String) -> Option<String> {
+        if method.to_lowercase()=="delete"{
+            match Response::delete_file(&format!("{}{}", route.root_directory, path)) {
+                Ok(_) => {
+                    self.add_content_length_header(self.content_suces().len());
+                    self.header.push(format!("{} {}", "\r\n".to_owned(), self.content_suces()));
+                    return Some(self.format_header());
+                } ,
+                Err(_) => {
+                    self.header[0] = format!(
+                        "{} {}",
+                        "HTTP/1.1".to_owned(),
+                        HttpStatus::from_code(404)
+                    );
+                    let errorp=self.content_error(404);
+                    self.add_content_length_header(errorp.len());
+                    self.header.push(format!("{} {}", "\r\n".to_owned(), errorp));
+                    return Some(self.format_header());
+                } ,
+            }
+        }
         if route.directory_listing {
             self.handle_directory_listing(&route, &path)
         } else {
@@ -259,4 +280,82 @@ impl Response {
             html_start, styles, html_end, code, html_close
         )
     }
+
+    fn content_suces(&self) -> String {
+        let styles = r#"
+            <style>
+            * {
+                transition: all 0.6s;
+            }
+    
+            html {
+                height: 100%;
+            }
+    
+            body {
+                font-family: 'Lato', sans-serif;
+                color: #888;
+                margin: 0;
+            }
+    
+            #main {
+                display: table;
+                width: 100%;
+                height: 100vh;
+                text-align: center;
+            }
+    
+            .fof {
+                display: table-cell;
+                vertical-align: middle;
+            }
+    
+            .fof h1 {
+                font-size: 50px;
+                display: inline-block;
+                padding-right: 12px;
+                animation: type .5s alternate infinite;
+            }
+    
+            @keyframes type {
+                from { box-shadow: inset -3px 0px 0px #888; }
+                to { box-shadow: inset -3px 0px 0px transparent; }
+            }
+            </style>
+        "#;
+
+        let html_start = r#"
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Delete Page</title>
+        "#;
+
+        let html_end = r#"
+            </head>
+            <body>
+                <div id="main">
+                    <div class="fof">
+                        <h1>Delete success
+        "#;
+
+        let html_close = r#"
+                        </h1>
+                    </div>
+                </div>
+            </body>
+            </html>
+        "#;
+
+        format!(
+            "{}{}{} {}",
+            html_start, styles, html_end, html_close
+        )
+    }
+    pub fn delete_file(file_path: &str) -> Result<(), Box<dyn Error>> {
+        fs::remove_file(file_path)?;
+        Ok(())
+      }
 }

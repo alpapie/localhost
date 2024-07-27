@@ -98,7 +98,6 @@ impl<'a> ConnectionHandler<'a> {
              
                 let cookie=request.get_cookie("session_id");
                 if route.1.auth.is_some() && !route.1.auth.unwrap() && (cookie.is_none() || !session.contains(&cookie.clone().unwrap()) ) {
-                    println!("cookie {:?}",cookie.clone());
                     return Some(self.eror_ppage(403));
                 }
 
@@ -109,17 +108,16 @@ impl<'a> ConnectionHandler<'a> {
                 }
 
                 let mut response = Response::new(sess_id);
-                if let Some(res) = response.response_200(route.1, path) {
+                if let Some(res) = response.response_200(route.1, path, request.method) {
                     self.write_event(&res);
                     return Some(true);
                 }
+                return Some(self.eror_ppage(500));
             } else {
                 return Some(self.eror_ppage(405));
             }
-        } else {
-            return Some(self.eror_ppage(404));
-        }
-        None
+        } 
+        Some(self.eror_ppage(404))
     }
 
     pub fn read_event(&mut self) -> Result<(String, Vec<u8>), u32> {
