@@ -25,7 +25,7 @@
           "setcookie":true
         },
         "/alpapie/form.html": {
-          "accepted_methods": ["GET", "POST"],
+          "accepted_methods": ["GET", "POST","DELETE"],
           "root_directory": "/home/alpapie/Desktop/zone01/rust/localhost/test/html",
           "directory_listing": false,
           "default_file_if_directory": "index.html"
