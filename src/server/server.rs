@@ -20,7 +20,7 @@ pub fn server_start() {
         Ok(config) => {
             let mut listeners = create_listeners(&config);
             // if listeners.is_none() || listeners.as_ref().unwrap().is_empty() {
-            //     listeners = Some(vec![create_default_listener().unwrap()]);
+                
             // }
             let mut litenerss= match listeners {
                 Some(list) => list,
@@ -30,6 +30,11 @@ pub fn server_start() {
                     exit(1);
                 },
             };
+            if litenerss.is_empty() {
+                println!("error server: code 500 -> no server");
+                LogError::new("error: no listener created ".to_string()).log();
+                exit(1);
+            }
             let mut server = Server::new(&mut litenerss);
             let mut events = Events::with_capacity(4096);
             
@@ -84,35 +89,44 @@ struct ListenerInfo <'a> {
 fn create_listeners(config: &HostConfig) -> Option<Vec<ListenerInfo>> {
     let mut listeners  = Vec::new();
     for host in &config.servers {
+        let mut list_try_server=Vec::new();
         for port in &host.ports {
             let _hoster = format!("{}:{}", host.server_address,port);
             let adress = match _hoster.to_socket_addrs() {
                 Ok(mut addr) => match addr.next() {
                     Some(socket_addr) => socket_addr,
-                    None => return {
+                    None =>  {
+                        println!("error lors de la conection");
                         LogError::new("error lors de la conection".to_string()).log();
-                        None
+                        list_try_server=Vec::new();
+                        break;
                     },
                 },
-                Err(e) => return {
+                Err(e) =>  {
+                    println!("{}", format!("error lors de la conection {e}"));
                     LogError::new(format!("error lors de la conection {e}")).log();
-                    None
+                    list_try_server=Vec::new();
+                    break;
                 },
             };
 
             match TcpListener::bind(adress) {
                 Ok(listener) => {
-                    listeners.push(ListenerInfo{
+                    list_try_server.push(ListenerInfo{
                         listener,
                         config:host
                     })
                 },
                 Err(e) => {
+                    println!("{}",format!("Error: {}. Unable to listen to: {}", e, adress));
                     LogError::new(format!("Error: {}. Unable to listen to: {}", e, adress)).log();
-                    return None
+                    list_try_server=Vec::new();
+                    break;
+
                 }
             }
         }
+        listeners.extend(list_try_server)
     }
     Some(listeners)
 }

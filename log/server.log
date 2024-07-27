@@ -1,0 +1,5 @@
+2024-07-27 16:41:50.931036406 - Error: Address already in use (os error 98). Unable to listen to: 127.0.0.1:8080
+2024-07-27 16:44:50.373296414 - Error: Address already in use (os error 98). Unable to listen to: 127.0.0.1:8080
+2024-07-27 16:44:50.373359908 - Error: Address already in use (os error 98). Unable to listen to: 127.0.0.2:8080
+2024-07-27 16:44:50.373399464 - error: no listener created 
+2024-07-27 16:45:18.650733639 - Error: Address already in use (os error 98). Unable to listen to: 127.0.0.1:8080

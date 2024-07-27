@@ -4,7 +4,7 @@
       "server_name": "example_server",
       "server_address": "127.0.0.1",
        "upload_folder": "/home/alpapie/Desktop/zone01/rust/localhost/test/images",
-      "ports": [8080, 8081],
+      "ports": [8080, 8080],
       "error_pages": {
         "error_400": "/views/errorpage/400.html",
         "error_403": "/views/errors/500.html",
@@ -47,7 +47,7 @@
       "server_name": "example_server",
       "server_address": "127.0.0.2",
       "upload_folder": "/home/alpapie/Desktop/zone01/rust/localhost/test/images",
-      "ports": [8080, 8081],
+      "ports": [8080, 8083],
       "error_pages": {
         "error_400": "/views/errorpage/400.html",
         "error_403": "/views/errors/500.html",
